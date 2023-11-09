@@ -3,14 +3,19 @@
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://d3js.org/topojson.v3.min.js"></script>
     <style>
-      .zip {
+      .county {
       fill: lightgrey;
       }
       .outline {
-        fill: none;
-        stroke: white;
-        stroke-width: 1px;
-      } 
+      fill: none;
+      stroke: black;
+      stroke-width: 1px;
+      }
+      .graticule {
+          fill: none;
+          stroke: grey;
+          stroke-width: 1px;
+      }
       .state-outline {
         fill: none;
         stroke: darkgray;
@@ -19,7 +24,62 @@
     </style>
   </head>
   <body>
-    
+    <svg id="map" height="770" width="990" style="margin:20px"></svg>
+
+    <script>
+      const svg = d3.select("#map");
+      const width = svg.attr("width");
+      const height = svg.attr("height");
+      const margin = { top: 20, right: 20, bottom: 20, left:20};
+      const mapWidth = width - margin.left - margin.right;
+      const mapHeight = height - margin.top - margin.bottom;
+      const map = svg.append("g")
+                      .attr("transform","translate("+margin.left+","+margin.top+")");
+
+      const requestData = async function() {
+        const internet = await d3.csv("kaggle_internet.csv");
+        const nyc = await d3.json("borough.topo.json");
+        console.log(internet);
+        console.log(nyc);
+        console.log(nyc.objects.collection);
+        var counties = topojson.feature(nyc, nyc.objects.collection);     // List of state outlines to fill
+        var countiesMesh = topojson.mesh(nyc, nyc.objects.collection);    // 'Mesh' of all outlines put together for a stroke
+        var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], counties);
+        var path = d3.geoPath().projection(projection);
+
+        let graticule = d3.geoGraticule10();
+        // console.log(graticule);
+        map.append("path").attr("class","graticule").attr("d", path(graticule));
+        
+        
+        // 2c. Draw states and outlines (see CSS at the top)
+        let countyPaths = map.selectAll("path.county").data(counties.features)
+                        .join("path")
+                        .attr("class", "county")
+                        .attr("note", d => d.id)  // debugging
+                        .attr("d", path);
+                        // .on('mouseover',  mouseEntersState )
+                        // .on('mouseout',  mouseLeavesState );
+      
+        map.append("path").datum(countiesMesh)
+          .attr("class","outline")
+          .attr("d", path);
+
+
+        let ny_count = 0;
+        internet.forEach((d) => {
+          if (d["state"]=="NY"){
+            // console.log(d);
+            ny_count+=1;
+          }
+        });
+
+        console.log(ny_count);
+      }
+
+      requestData();
+
+    </script>
   </body>
     
 </html>
