@@ -73,8 +73,34 @@
             ny_count+=1;
           }
         });
-
+        let boroughs = ["Bronx County", "Kings County", "New York County", "Queens County", "Richmond County"];
+        let borough_to_county = {
+          "Bronx County":"Bronx",
+          "Kings County":"Brooklyn",
+          "New York County":"Manhattan",
+          "Queens County":"Queens",
+          "Richmond County":"Staten Island"
+        }
+        let nyc_internet = internet.filter(d=>(boroughs.includes(d["county"])));
+        console.log(nyc_internet);
         console.log(ny_count);
+
+        var boroughDict = {}   // stateID ===> stateData
+        nyc_internet.forEach( d => {
+          let borough = borough_to_county[d.county];
+          boroughDict[borough] = d;
+        });
+        console.log(boroughDict);
+
+        const minMax = d3.extent( nyc_internet, d => d.percent_no_internet );
+        // const colorScale = d3
+        //   .scaleLinear()
+        //   .domain(d3.map(nyc_internet, d => d.percent_no_internet))
+        //   .range(['white', 'blue']);
+        const colorScale = d3.scaleSequential(d3.interpolateBuPu).domain(minMax);
+
+        map.selectAll(".county")
+        .style("fill", d => colorScale( boroughDict[d.properties.BoroName].percent_no_internet ) );
       }
 
       requestData();
