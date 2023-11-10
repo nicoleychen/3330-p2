@@ -57,9 +57,9 @@
                         .join("path")
                         .attr("class", "county")
                         .attr("note", d => d.id)  // debugging
-                        .attr("d", path);
-                        // .on('mouseover',  mouseEntersState )
-                        // .on('mouseout',  mouseLeavesState );
+                        .attr("d", path)
+                        .on('mouseover',  mouseEntersState )
+                        .on('mouseout',  mouseLeavesState );
       
         map.append("path").datum(countiesMesh)
           .attr("class","outline")
@@ -101,6 +101,55 @@
 
         map.selectAll(".county")
         .style("fill", d => colorScale( boroughDict[d.properties.BoroName].percent_no_internet ) );
+
+        let tooltipWidth = 120;
+        let tooltipHeight = 40;
+        var format = d3.format(".2f")
+        let tooltip = map.append("g")
+          .attr("class","tooltip")
+          .attr("visibility","hidden");
+        tooltip.append("rect")
+          .attr("fill", "lightgray")
+          .attr("opacity", 0.9)
+          .attr("x", -tooltipWidth / 2.0)
+          .attr("y", 0)
+          .attr("width",tooltipWidth)
+          .attr("height",tooltipHeight);
+        let percentage_text = tooltip.append("text")
+          .attr("fill", "black")
+          .attr("text-anchor","middle")
+          .attr("alignment-baseline","hanging")
+          .attr("x", 0)
+          .attr("y", 2);
+
+        function mouseEntersState() {
+          // Make tooltip visible
+          tooltip.style("visibility","visible")
+      
+          // Find the state SVG element and add stroke
+          let borough = d3.select(this);
+          borough.attr("stroke","black")
+            .attr("stroke-width", 3);
+          let name = borough.datum().properties.BoroName;
+          let countyData = boroughDict[name]
+          percentage_text.text(format(countyData.percent_no_internet)+"%");
+
+          let bounds = path.bounds( borough.datum() );   
+          let xPos = (bounds[0][0]+bounds[1][0])/2.0;
+          let yPos = bounds[0][1]+ 50;
+          tooltip.attr("transform",`translate(${xPos},${yPos})`);
+          
+        }
+        function mouseLeavesState() {
+  
+          // Hide when you leave a state
+          tooltip.style("visibility","hidden");
+
+          let borough = d3.select(this);
+          borough.attr("stroke","none")
+            .attr("stroke-width", 0);
+        }
+        
       }
 
       requestData();
