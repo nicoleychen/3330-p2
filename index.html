@@ -2,7 +2,6 @@
 
 <head>
   <script src="https://d3js.org/d3.v7.min.js"></script>
-  <!-- <script src="https://d3js.org/topojson.v3.min.js"></script> -->
   <script src="https://d3js.org/topojson.v3.min.js"></script>
   <style>
     .county {
@@ -44,27 +43,22 @@
 
     const requestData = async function () {
       const internet = await d3.csv("kaggle_internet.csv");
-      const nyc = await d3.json("countiesTriState.json");
-      // const temp = await d3.json("borough.topo.json");
-      // const temp2 = await d3.json("counties-albers-10m.json")
-      // console.log('temp', temp);
-      // console.log('temp2', temp2)
-      // console.log(internet);
-      console.log("nyc", nyc);
-      // console.log("here1", temp.objects.collection);
-      // console.log("here2", nyc.objects.counties);
-      // var counties = topojson.feature(temp, temp.objects.collection);
-      var counties = topojson.feature(nyc, nyc.objects.counties);     // List of state outlines to fill
-      // var counties = topojson.feature(temp2, temp2.objects.counties);
-      // var countiesMesh = topojson.mesh(temp2, temp2.objects.counties);
+      const tristate = await d3.json("countiesTriState.json");
+      const temp = await d3.json("borough.topo.json");
 
-      var countiesMesh = topojson.mesh(nyc, nyc.objects.counties);    // 'Mesh' of all outlines put together for a stroke
+      console.log("tristate", tristate);
+      // console.log(tristate.objects.counties)
+      // let arc = [6348, 6349, 6350, -3733, 6351]
+      // let arc = [[-3733, 6351, 6348, 6349, 6350]]
+      let arc = [[-3733, 6351]]
+      tristate.objects.counties.geometries[4].arcs = arc;
+      var counties = topojson.feature(tristate, tristate.objects.counties);     // List of state outlines to fill
+      var countiesMesh = topojson.mesh(tristate, tristate.objects.counties);    // 'Mesh' of all outlines put together for a stroke
       // var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], counties)
       var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], counties);
       var path = d3.geoPath().projection(projection);
       // var path = d3.geoPath(projection);
       let graticule = d3.geoGraticule10();
-      // console.log(graticule);
       map.append("path")
         .attr("class", "graticule").attr("d", path(graticule));
 
@@ -81,45 +75,28 @@
         .attr("class", "outline")
         .attr("d", path);
 
-
-      // let ny_count = 0;
-      // internet.forEach((d) => {
-      //   if (d["state"] == "NY") {
-      //     // console.log(d);
-      //     ny_count += 1;
-      //   }
-      // });
-      // let boroughs = ["Bronx County", "Kings County", "New York County", "Queens County", "Richmond County"];
-      // let borough_to_county = {
-      //   "Bronx County": "Bronx",
-      //   "Kings County": "Brooklyn",
-      //   "New York County": "Manhattan",
-      //   "Queens County": "Queens",
-      //   "Richmond County": "Staten Island"
-      // }
       let stateNames = ['NY', 'CT', 'NJ']
-      let countyNames = ['Orange', 'Dutchess', 'Ulster', 'Nassau', 'Sullivan', 'Rockland', 'Putnam', 'Passaic', 'Hudson', 'Bergen', 'Westchester', 'Richmond', 'Bronx', 'New York', 'Queens', 'Kings', 'Middlesex', 'Monmouth', 'Ocean', 'Somerset', 'Essex', 'Union', 'Morris', 'Sussex', 'Hunterdon', 'Mercer', 'Fairfield', 'New Haven', 'Litchfield']
+      let countyNames = ['Orange', 'Dutchess', 'Ulster', 'Nassau', 'Sullivan', 'Rockland', 'Putnam', 'Passaic', 'Hudson', 'Bergen', 'Westchester', 'Richmond', 'Bronx', 'New York', 'Queens', 'Kings', 'Middlesex', 'Monmouth', 'Ocean', 'Somerset', 'Essex', 'Union', 'Morris', 'Sussex', 'Hunterdon', 'Mercer', 'Fairfield', 'New Haven', 'Litchfield', 'Suffolk']
       let tristate_internet = internet.filter(d => (countyNames.includes(d["county"].replace(' County', ''))) && stateNames.includes(d['state']));
-      console.log(tristate_internet);
-      // console.log(ny_count);
 
       var countyDict = {}   // stateID ===> stateData
       tristate_internet.forEach(d => {
         let county = d.county;
-        // console.log(d)
         countyDict[county] = d;
       });
-      // console.log(countyDict);
 
-      const minMax = d3.extent(tristate_internet, d => d.percent_no_internet);
+      const minMax = d3.extent(tristate_internet, d => Number(d.percent_no_internet));
+      console.log(minMax)
       // const colorScale = d3
       //   .scaleLinear()
-      //   .domain(d3.map(nyc_internet, d => d.percent_no_internet))
+      //   .domain(d3.map(tristate_internet, d => d.percent_no_internet))
       //   .range(['white', 'blue']);
-      const colorScale = d3.scaleSequential(d3.interpolateBuPu).domain(minMax);
-
+      const colorScale = d3.scaleSequential()
+        // .interpolator(d3.interpolateBuPu)
+        .interpolator(d3.interpolateYlGnBu)
+        .domain(minMax);
       map.selectAll(".county")
-        .style("fill", d => colorScale(d.percent_no_internet));
+        .style("fill", d => colorScale(countyDict[(d.properties.name + " County")].percent_no_internet));
 
       let tooltipWidth = 120;
       let tooltipHeight = 40;
@@ -140,6 +117,13 @@
         .attr("alignment-baseline", "hanging")
         .attr("x", 0)
         .attr("y", 2);
+      let name_text = tooltip.append("text")
+        .attr("fill", "black")
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "hanging")
+        .attr("x", 5)
+        .attr("y", 9);
+
 
       function mouseEntersState() {
         // Make tooltip visible
@@ -149,10 +133,11 @@
         let county = d3.select(this);
         county.attr("stroke", "black")
           .attr("stroke-width", 3);
-        let name = county.datum().county;
-        console.log(county.datum())
-        let countyData = countyDict[((county.datum().properties.name) + " County")];
+        let name = county.datum().properties.name;
+        // console.log(county.datum())
+        let countyData = countyDict[name + " County"];
         percentage_text.text(format(countyData.percent_no_internet) + "%");
+        console.log(name)
 
         let bounds = path.bounds(county.datum());
         let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
