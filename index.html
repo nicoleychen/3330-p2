@@ -29,7 +29,7 @@
 
   <body>
     <svg id="map" height="770" width="990" style="margin: 20px"></svg>
-
+    <svg id="pie"></svg>
     <script>
       const svg = d3.select("#map");
       const width = svg.attr("width");
@@ -46,7 +46,7 @@
         const tristate = await d3.json("countiesTriState.json");
         const temp = await d3.json("borough.topo.json");
 
-        console.log("tristate", tristate);
+        // console.log("tristate", tristate);
         // console.log(tristate.objects.counties)
         // let arc = [6348, 6349, 6350, -3733, 6351]
         // let arc = [[-3733, 6351, 6348, 6349, 6350]]
@@ -75,7 +75,8 @@
           // .attr("note", d => d.id)  // debugging
           .attr("d", path)
           .on("mouseover", mouseEntersState)
-          .on("mouseout", mouseLeavesState);
+          .on("mouseout", mouseLeavesState)
+          .on("click", updatePie);
 
         map
           .append("path")
@@ -127,11 +128,12 @@
           let county = d.county;
           countyDict[county] = d;
         });
+        console.log(countyDict);
 
         const minMax = d3.extent(tristate_internet, (d) =>
           Number(d.percent_no_internet)
         );
-        console.log(minMax);
+        // console.log(minMax);
         // const colorScale = d3
         //   .scaleLinear()
         //   .domain(d3.map(tristate_internet, d => d.percent_no_internet))
@@ -190,7 +192,7 @@
           // console.log(county.datum())
           let countyData = countyDict[name + " County"];
           percentage_text.text(format(countyData.percent_no_internet) + "%");
-          console.log(name);
+          // console.log(name);
 
           let bounds = path.bounds(county.datum());
           let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
@@ -201,13 +203,13 @@
           // Hide when you leave a state
           tooltip.style("visibility", "hidden");
 
-          let borough = d3.select(this);
-          borough.attr("stroke", "none").attr("stroke-width", 0);
+          let county = d3.select(this);
+          county.attr("stroke", "none").attr("stroke-width", 0);
         }
 
-        // let nyc_school = nyc.filter((d) =>
-        //   boroughs.includes(d["county"])
-        // );
+        //      PIE CHART STUFF IS HERE AND DOWN
+        //      PIE CHART STUFF IS HERE AND DOWN
+        //      PIE CHART STUFF IS HERE AND DOWN
 
         let pieHeight = 600;
         let pieWidth = 600;
@@ -222,7 +224,6 @@
 
         pie
           .append("text")
-          .text("Education Levels by County")
           .attr("text-anchor", "middle")
           .attr("font-size", 20)
           .attr("x", 0)
@@ -236,33 +237,27 @@
           "P_other",
         ];
 
-        let nyc_school = {};
-        boroughs.forEach((borough) => {
-          // console.log(borough);
-          // console.log(boroughDict[borough_to_county[borough]]);
-          nyc_school[borough] = {
-            P_below_middle_school:
-              boroughDict[borough_to_county[borough]].P_below_middle_school,
-            P_some_high_school:
-              boroughDict[borough_to_county[borough]].P_some_high_school,
+        let tristate_school = {};
+        countyNames.forEach((county) => {
+          county = county + " County";
+          tristate_school[county] = {
+            P_below_middle_school: countyDict[county].P_below_middle_school,
+            P_some_high_school: countyDict[county].P_some_high_school,
             P_high_school_equivalent:
-              boroughDict[borough_to_county[borough]].P_high_school_equivalent,
-            P_some_collegel:
-              boroughDict[borough_to_county[borough]].P_some_college,
-            P_bachelor_and_above:
-              boroughDict[borough_to_county[borough]].P_bachelor_and_above,
+              countyDict[county].P_high_school_equivalent,
+            P_some_collegel: countyDict[county].P_some_college,
+            P_bachelor_and_above: countyDict[county].P_bachelor_and_above,
             P_other: (
-              boroughDict[borough_to_county[borough]].P_total -
-              boroughDict[borough_to_county[borough]].P_below_middle_school -
-              boroughDict[borough_to_county[borough]].P_some_high_school -
-              boroughDict[borough_to_county[borough]].P_high_school_equivalent -
-              boroughDict[borough_to_county[borough]].P_some_college -
-              boroughDict[borough_to_county[borough]].P_bachelor_and_above
+              countyDict[county].P_total -
+              countyDict[county].P_below_middle_school -
+              countyDict[county].P_some_high_school -
+              countyDict[county].P_high_school_equivalent -
+              countyDict[county].P_some_college -
+              countyDict[county].P_bachelor_and_above
             ).toString(),
           };
         });
-        console.log(nyc_school);
-        // .append("g")
+        // console.log(tristate_school);
 
         let pieColorScale = d3
           .scaleOrdinal()
@@ -271,15 +266,17 @@
 
         function updatePie() {
           let selected = d3.select(this);
-
-          console.log(selected);
-          let name = county_to_borough[selected.datum().properties.BoroName];
-          console.log(name);
+          var name;
+          try {
+            name = selected.datum().properties.name + " County";
+          } catch (TypeError) {
+            name = "New York County";
+          }
           let d3pie = d3.pie().value((d) => {
             return d[1];
           });
 
-          let dataReady = d3pie(Object.entries(nyc_school[name]));
+          let dataReady = d3pie(Object.entries(tristate_school[name]));
           const u = pie.selectAll("path").data(dataReady);
           u.join("path")
             .transition()
@@ -297,17 +294,9 @@
             .attr("stroke", "white")
             .style("stroke-width", "2px")
             .style("opacity", 1);
+
+          pie.select("text").text("Education Level Breakdown of " + name);
         }
-
-        // let sum = boroughDict[Bronx].P_total;
-
-        // let P_remaining =
-        //   sum -
-        //   boroughDict[Bronx].P_below_middle_school -
-        //   boroughDict[Bronx].P_some_high_school -
-        //   boroughDict[Bronx].P_high_school_equivalent -
-        //   boroughDict[Bronx].P_some_college -
-        //   boroughDict[Bronx].P_bachelor_and_above;
         updatePie();
       };
 
