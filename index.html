@@ -1,165 +1,317 @@
 <html>
-
-<head>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://d3js.org/topojson.v3.min.js"></script>
-  <style>
-    .county {
-      fill: lightgrey;
-    }
-
-    .outline {
-      fill: none;
-      stroke: black;
-      stroke-width: 1px;
-    }
-
-    .graticule {
-      fill: none;
-      stroke: grey;
-      stroke-width: 1px;
-    }
-
-    .state-outline {
-      fill: none;
-      stroke: darkgray;
-      stroke-width: 3px;
-    }
-  </style>
-</head>
-
-<body>
-  <svg id="map" height="770" width="990" style="margin:20px"></svg>
-
-  <script>
-    const svg = d3.select("#map");
-    const width = svg.attr("width");
-    const height = svg.attr("height");
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-    const mapWidth = width - margin.left - margin.right;
-    const mapHeight = height - margin.top - margin.bottom;
-    const map = svg.append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    const requestData = async function () {
-      const internet = await d3.csv("kaggle_internet.csv");
-      const tristate = await d3.json("countiesTriState.json");
-      const temp = await d3.json("borough.topo.json");
-
-      console.log("tristate", tristate);
-      // console.log(tristate.objects.counties)
-      // let arc = [6348, 6349, 6350, -3733, 6351]
-      // let arc = [[-3733, 6351, 6348, 6349, 6350]]
-      let arc = [[-3733, 6351]]
-      tristate.objects.counties.geometries[4].arcs = arc;
-      var counties = topojson.feature(tristate, tristate.objects.counties);     // List of state outlines to fill
-      var countiesMesh = topojson.mesh(tristate, tristate.objects.counties);    // 'Mesh' of all outlines put together for a stroke
-      // var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], counties)
-      var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], counties);
-      var path = d3.geoPath().projection(projection);
-      // var path = d3.geoPath(projection);
-      let graticule = d3.geoGraticule10();
-      map.append("path")
-        .attr("class", "graticule").attr("d", path(graticule));
-
-      // 2c. Draw states and outlines (see CSS at the top)
-      let countyPaths = map.selectAll("path.county").data(counties.features)
-        .join("path")
-        .attr("class", "county")
-        // .attr("note", d => d.id)  // debugging
-        .attr("d", path)
-        .on('mouseover', mouseEntersState)
-        .on('mouseout', mouseLeavesState);
-
-      map.append("path").datum(countiesMesh)
-        .attr("class", "outline")
-        .attr("d", path);
-
-      let stateNames = ['NY', 'CT', 'NJ']
-      let countyNames = ['Orange', 'Dutchess', 'Ulster', 'Nassau', 'Sullivan', 'Rockland', 'Putnam', 'Passaic', 'Hudson', 'Bergen', 'Westchester', 'Richmond', 'Bronx', 'New York', 'Queens', 'Kings', 'Middlesex', 'Monmouth', 'Ocean', 'Somerset', 'Essex', 'Union', 'Morris', 'Sussex', 'Hunterdon', 'Mercer', 'Fairfield', 'New Haven', 'Litchfield', 'Suffolk']
-      let tristate_internet = internet.filter(d => (countyNames.includes(d["county"].replace(' County', ''))) && stateNames.includes(d['state']));
-
-      var countyDict = {}   // stateID ===> stateData
-      tristate_internet.forEach(d => {
-        let county = d.county;
-        countyDict[county] = d;
-      });
-
-      const minMax = d3.extent(tristate_internet, d => Number(d.percent_no_internet));
-      console.log(minMax)
-      // const colorScale = d3
-      //   .scaleLinear()
-      //   .domain(d3.map(tristate_internet, d => d.percent_no_internet))
-      //   .range(['white', 'blue']);
-      const colorScale = d3.scaleSequential()
-        // .interpolator(d3.interpolateBuPu)
-        .interpolator(d3.interpolateYlGnBu)
-        .domain(minMax);
-      map.selectAll(".county")
-        .style("fill", d => colorScale(countyDict[(d.properties.name + " County")].percent_no_internet));
-
-      let tooltipWidth = 120;
-      let tooltipHeight = 40;
-      var format = d3.format(".2f")
-      let tooltip = map.append("g")
-        .attr("class", "tooltip")
-        .attr("visibility", "hidden");
-      tooltip.append("rect")
-        .attr("fill", "lightgray")
-        .attr("opacity", 0.9)
-        .attr("x", -tooltipWidth / 2.0)
-        .attr("y", 0)
-        .attr("width", tooltipWidth)
-        .attr("height", tooltipHeight);
-      let percentage_text = tooltip.append("text")
-        .attr("fill", "black")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "hanging")
-        .attr("x", 0)
-        .attr("y", 2);
-      let name_text = tooltip.append("text")
-        .attr("fill", "black")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "hanging")
-        .attr("x", 5)
-        .attr("y", 9);
-
-
-      function mouseEntersState() {
-        // Make tooltip visible
-        tooltip.style("visibility", "visible")
-
-        // Find the state SVG element and add stroke
-        let county = d3.select(this);
-        county.attr("stroke", "black")
-          .attr("stroke-width", 3);
-        let name = county.datum().properties.name;
-        // console.log(county.datum())
-        let countyData = countyDict[name + " County"];
-        percentage_text.text(format(countyData.percent_no_internet) + "%");
-        console.log(name)
-
-        let bounds = path.bounds(county.datum());
-        let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
-        let yPos = bounds[0][1] + 50;
-        tooltip.attr("transform", `translate(${xPos},${yPos})`);
-
-      }
-      function mouseLeavesState() {
-
-        // Hide when you leave a state
-        tooltip.style("visibility", "hidden");
-
-        let county = d3.select(this);
-        county.attr("stroke", "none")
-          .attr("stroke-width", 0);
+  <head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <style>
+      .county {
+        fill: lightgrey;
       }
 
-    }
+      .outline {
+        fill: none;
+        stroke: black;
+        stroke-width: 1px;
+      }
 
-    requestData();
+      .graticule {
+        fill: none;
+        stroke: grey;
+        stroke-width: 1px;
+      }
 
-  </script>
-</body>
+      .state-outline {
+        fill: none;
+        stroke: darkgray;
+        stroke-width: 3px;
+      }
+    </style>
+  </head>
 
+  <body>
+    <svg id="map" height="770" width="990" style="margin: 20px"></svg>
+
+    <script>
+      const svg = d3.select("#map");
+      const width = svg.attr("width");
+      const height = svg.attr("height");
+      const margin = { top: 20, right: 20, bottom: 20, left: 20 };
+      const mapWidth = width - margin.left - margin.right;
+      const mapHeight = height - margin.top - margin.bottom;
+      const map = svg
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+      const requestData = async function () {
+        const internet = await d3.csv("kaggle_internet.csv");
+        const tristate = await d3.json("countiesTriState.json");
+        const temp = await d3.json("borough.topo.json");
+
+        console.log("tristate", tristate);
+        // console.log(tristate.objects.counties)
+        // let arc = [6348, 6349, 6350, -3733, 6351]
+        // let arc = [[-3733, 6351, 6348, 6349, 6350]]
+        let arc = [[-3733, 6351]];
+        tristate.objects.counties.geometries[4].arcs = arc;
+        var counties = topojson.feature(tristate, tristate.objects.counties); // List of state outlines to fill
+        var countiesMesh = topojson.mesh(tristate, tristate.objects.counties); // 'Mesh' of all outlines put together for a stroke
+        // var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], counties)
+        var projection = d3
+          .geoMercator()
+          .fitSize([mapWidth, mapHeight], counties);
+        var path = d3.geoPath().projection(projection);
+        // var path = d3.geoPath(projection);
+        let graticule = d3.geoGraticule10();
+        map
+          .append("path")
+          .attr("class", "graticule")
+          .attr("d", path(graticule));
+
+        // 2c. Draw states and outlines (see CSS at the top)
+        let countyPaths = map
+          .selectAll("path.county")
+          .data(counties.features)
+          .join("path")
+          .attr("class", "county")
+          // .attr("note", d => d.id)  // debugging
+          .attr("d", path)
+          .on("mouseover", mouseEntersState)
+          .on("mouseout", mouseLeavesState);
+
+        map
+          .append("path")
+          .datum(countiesMesh)
+          .attr("class", "outline")
+          .attr("d", path);
+
+        let stateNames = ["NY", "CT", "NJ"];
+        let countyNames = [
+          "Orange",
+          "Dutchess",
+          "Ulster",
+          "Nassau",
+          "Sullivan",
+          "Rockland",
+          "Putnam",
+          "Passaic",
+          "Hudson",
+          "Bergen",
+          "Westchester",
+          "Richmond",
+          "Bronx",
+          "New York",
+          "Queens",
+          "Kings",
+          "Middlesex",
+          "Monmouth",
+          "Ocean",
+          "Somerset",
+          "Essex",
+          "Union",
+          "Morris",
+          "Sussex",
+          "Hunterdon",
+          "Mercer",
+          "Fairfield",
+          "New Haven",
+          "Litchfield",
+          "Suffolk",
+        ];
+        let tristate_internet = internet.filter(
+          (d) =>
+            countyNames.includes(d["county"].replace(" County", "")) &&
+            stateNames.includes(d["state"])
+        );
+
+        var countyDict = {}; // stateID ===> stateData
+        tristate_internet.forEach((d) => {
+          let county = d.county;
+          countyDict[county] = d;
+        });
+
+        const minMax = d3.extent(tristate_internet, (d) =>
+          Number(d.percent_no_internet)
+        );
+        console.log(minMax);
+        // const colorScale = d3
+        //   .scaleLinear()
+        //   .domain(d3.map(tristate_internet, d => d.percent_no_internet))
+        //   .range(['white', 'blue']);
+        const colorScale = d3
+          .scaleSequential()
+          // .interpolator(d3.interpolateBuPu)
+          .interpolator(d3.interpolateYlGnBu)
+          .domain(minMax);
+        map
+          .selectAll(".county")
+          .style("fill", (d) =>
+            colorScale(
+              countyDict[d.properties.name + " County"].percent_no_internet
+            )
+          );
+
+        let tooltipWidth = 120;
+        let tooltipHeight = 40;
+        var format = d3.format(".2f");
+        let tooltip = map
+          .append("g")
+          .attr("class", "tooltip")
+          .attr("visibility", "hidden");
+        tooltip
+          .append("rect")
+          .attr("fill", "lightgray")
+          .attr("opacity", 0.9)
+          .attr("x", -tooltipWidth / 2.0)
+          .attr("y", 0)
+          .attr("width", tooltipWidth)
+          .attr("height", tooltipHeight);
+        let percentage_text = tooltip
+          .append("text")
+          .attr("fill", "black")
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "hanging")
+          .attr("x", 0)
+          .attr("y", 2);
+        let name_text = tooltip
+          .append("text")
+          .attr("fill", "black")
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "hanging")
+          .attr("x", 5)
+          .attr("y", 9);
+
+        function mouseEntersState() {
+          // Make tooltip visible
+          tooltip.style("visibility", "visible");
+
+          // Find the state SVG element and add stroke
+          let county = d3.select(this);
+          county.attr("stroke", "black").attr("stroke-width", 3);
+          let name = county.datum().properties.name;
+          // console.log(county.datum())
+          let countyData = countyDict[name + " County"];
+          percentage_text.text(format(countyData.percent_no_internet) + "%");
+          console.log(name);
+
+          let bounds = path.bounds(county.datum());
+          let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
+          let yPos = bounds[0][1] + 50;
+          tooltip.attr("transform", `translate(${xPos},${yPos})`);
+        }
+        function mouseLeavesState() {
+          // Hide when you leave a state
+          tooltip.style("visibility", "hidden");
+
+          let borough = d3.select(this);
+          borough.attr("stroke", "none").attr("stroke-width", 0);
+        }
+
+        // let nyc_school = nyc.filter((d) =>
+        //   boroughs.includes(d["county"])
+        // );
+
+        let pieHeight = 600;
+        let pieWidth = 600;
+        let pieMargin = 40;
+
+        let pie = d3
+          .select("#pie")
+          .attr("width", pieWidth)
+          .attr("height", pieHeight + 50)
+          .append("g")
+          .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
+
+        pie
+          .append("text")
+          .text("Education Levels by County")
+          .attr("text-anchor", "middle")
+          .attr("font-size", 20)
+          .attr("x", 0)
+          .attr("y", 300);
+        let pieDomain = [
+          "P_below_middle_school",
+          "P_some_high_school",
+          "P_high_school_equivalent",
+          "P_some_college",
+          "P_bachelor_and_above",
+          "P_other",
+        ];
+
+        let nyc_school = {};
+        boroughs.forEach((borough) => {
+          // console.log(borough);
+          // console.log(boroughDict[borough_to_county[borough]]);
+          nyc_school[borough] = {
+            P_below_middle_school:
+              boroughDict[borough_to_county[borough]].P_below_middle_school,
+            P_some_high_school:
+              boroughDict[borough_to_county[borough]].P_some_high_school,
+            P_high_school_equivalent:
+              boroughDict[borough_to_county[borough]].P_high_school_equivalent,
+            P_some_collegel:
+              boroughDict[borough_to_county[borough]].P_some_college,
+            P_bachelor_and_above:
+              boroughDict[borough_to_county[borough]].P_bachelor_and_above,
+            P_other: (
+              boroughDict[borough_to_county[borough]].P_total -
+              boroughDict[borough_to_county[borough]].P_below_middle_school -
+              boroughDict[borough_to_county[borough]].P_some_high_school -
+              boroughDict[borough_to_county[borough]].P_high_school_equivalent -
+              boroughDict[borough_to_county[borough]].P_some_college -
+              boroughDict[borough_to_county[borough]].P_bachelor_and_above
+            ).toString(),
+          };
+        });
+        console.log(nyc_school);
+        // .append("g")
+
+        let pieColorScale = d3
+          .scaleOrdinal()
+          .domain(pieDomain)
+          .range(d3.schemeSet3);
+
+        function updatePie() {
+          let selected = d3.select(this);
+
+          console.log(selected);
+          let name = county_to_borough[selected.datum().properties.BoroName];
+          console.log(name);
+          let d3pie = d3.pie().value((d) => {
+            return d[1];
+          });
+
+          let dataReady = d3pie(Object.entries(nyc_school[name]));
+          const u = pie.selectAll("path").data(dataReady);
+          u.join("path")
+            .transition()
+            .duration(1000)
+            .attr(
+              "d",
+              d3
+                .arc()
+                .innerRadius(0)
+                .outerRadius(Math.min(pieHeight, pieWidth) / 2 - pieMargin)
+            )
+            .attr("fill", function (d) {
+              return pieColorScale(d.data[0]);
+            })
+            .attr("stroke", "white")
+            .style("stroke-width", "2px")
+            .style("opacity", 1);
+        }
+
+        // let sum = boroughDict[Bronx].P_total;
+
+        // let P_remaining =
+        //   sum -
+        //   boroughDict[Bronx].P_below_middle_school -
+        //   boroughDict[Bronx].P_some_high_school -
+        //   boroughDict[Bronx].P_high_school_equivalent -
+        //   boroughDict[Bronx].P_some_college -
+        //   boroughDict[Bronx].P_bachelor_and_above;
+        updatePie();
+      };
+
+      requestData();
+    </script>
+  </body>
 </html>
