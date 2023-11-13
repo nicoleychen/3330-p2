@@ -1,0 +1,48 @@
+<html>
+
+<head>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://d3js.org/topojson.v3.min.js"></script>
+  <script src=""></script>
+</head>
+
+<body>
+  <script>
+    const requestData = async function () {
+      const data = await d3.json("counties-albers-10m.json");
+      const temp = await d3.json("countiesTriState.json")
+      console.log("data", data);
+      let arcsAll = data.arcs;
+      let countiesAll = data.objects.counties;
+      const want = ["36", "34", "09"]
+
+      let countiesGeometry = [];
+      countiesAll.geometries.forEach((d, i) => {
+        let newProperties = { idFIPS: "", idState: "", name: "" };
+        let newGeometry = { type: "Polygon", arcs: [], properties: {} };
+
+        if (want.includes(d.id.slice(0, 2))) {
+          newProperties.name = d.properties.name;
+          newProperties.idFIPS = d.id;
+          newGeometry.arcs = d.arcs;
+          if (d.id.slice(0, 2) == '36') { //ny
+            newProperties.idState = 'NY';
+          } else if (d.id.slice(0, 2) == '09') { //ct
+            newProperties.idState = 'CT';
+          } else if (d.id.slice(0, 2) == '34') { //nj
+            newProperties.idState = 'NJ';
+          }
+          newGeometry.properties = newProperties;
+          countiesGeometry.push(newGeometry);
+        }
+      });
+      let countiesNew = { type: "GeometryCollection", geometries: countiesGeometry }
+      let dataNew = { type: "Topology", arcs: arcsAll, objects: { counties: countiesNew } }
+      console.log(dataNew);
+      console.log('temp', temp)
+    }
+    requestData();
+  </script>
+</body>
+
+</html>
