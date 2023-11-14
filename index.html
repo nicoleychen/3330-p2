@@ -23,8 +23,8 @@
 
 <body>
   <svg id="map" height="800" width="920" style="margin:20px"></svg>
-  <svg id="charts" height="400" width="400" style="margin:20px"></svg>
-
+  <svg id="charts" height="400" width="400" style="margin: 20px"></svg>
+  <svg id="pie"></svg>
   <script>
 
 
@@ -47,7 +47,8 @@
     const chartWidth = widthC - marginChart.left - marginChart.right;
     const chartHeight = heightC - marginChart.top - marginChart.bottom;
     let annotations = svgMap.append("g").attr("id", "annotations");
-    let barRace = svgMap.append("g").attr("id", "points")
+    let barRace = svgMap.append("g")
+      .attr("id", "points")
       .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
 
 
@@ -77,9 +78,44 @@
         .attr("stroke", 'white')
         .attr("d", path);
 
-      let stateNames = ['NY', 'CT', 'NJ']
-      let countyNames = ['Orange', 'Dutchess', 'Ulster', 'Nassau', 'Sullivan', 'Rockland', 'Putnam', 'Passaic', 'Hudson', 'Bergen', 'Westchester', 'Richmond', 'Bronx', 'New York', 'Queens', 'Kings', 'Middlesex', 'Monmouth', 'Ocean', 'Somerset', 'Essex', 'Union', 'Morris', 'Sussex', 'Hunterdon', 'Mercer', 'Fairfield', 'New Haven', 'Litchfield', 'Suffolk']
-      let tristate_internet = internet.filter(d => (countyNames.includes(d["county"].replace(' County', ''))) && stateNames.includes(d['state']));
+      let stateNames = ["NY", "CT", "NJ"];
+      let countyNames = [
+        "Orange",
+        "Dutchess",
+        "Ulster",
+        "Nassau",
+        "Sullivan",
+        "Rockland",
+        "Putnam",
+        "Passaic",
+        "Hudson",
+        "Bergen",
+        "Westchester",
+        "Richmond",
+        "Bronx",
+        "New York",
+        "Queens",
+        "Kings",
+        "Middlesex",
+        "Monmouth",
+        "Ocean",
+        "Somerset",
+        "Essex",
+        "Union",
+        "Morris",
+        "Sussex",
+        "Hunterdon",
+        "Mercer",
+        "Fairfield",
+        "New Haven",
+        "Litchfield",
+        "Suffolk",
+      ];
+      let tristate_internet = internet.filter(
+        (d) =>
+          countyNames.includes(d["county"].replace(" County", "")) &&
+          stateNames.includes(d["state"])
+      );
 
       var countyDict = {}
       tristate_internet.forEach(d => {
@@ -241,7 +277,99 @@
         let name = county.datum().properties.name;
         updateBar(name);
       }
-    }
+      //      PIE CHART STUFF IS HERE AND DOWN
+      //      PIE CHART STUFF IS HERE AND DOWN
+      //      PIE CHART STUFF IS HERE AND DOWN
+
+      let pieHeight = 600;
+      let pieWidth = 600;
+      let pieMargin = 40;
+
+      let pie = d3
+        .select("#pie")
+        .attr("width", pieWidth)
+        .attr("height", pieHeight + 50)
+        .append("g")
+        .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
+
+      pie
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("font-size", 20)
+        .attr("x", 0)
+        .attr("y", 300);
+      let pieDomain = [
+        "P_below_middle_school",
+        "P_some_high_school",
+        "P_high_school_equivalent",
+        "P_some_college",
+        "P_bachelor_and_above",
+        "P_other",
+      ];
+
+      let tristate_school = {};
+      countyNames.forEach((county) => {
+        county = county + " County";
+        tristate_school[county] = {
+          P_below_middle_school: countyDict[county].P_below_middle_school,
+          P_some_high_school: countyDict[county].P_some_high_school,
+          P_high_school_equivalent:
+            countyDict[county].P_high_school_equivalent,
+          P_some_collegel: countyDict[county].P_some_college,
+          P_bachelor_and_above: countyDict[county].P_bachelor_and_above,
+          P_other: (
+            countyDict[county].P_total -
+            countyDict[county].P_below_middle_school -
+            countyDict[county].P_some_high_school -
+            countyDict[county].P_high_school_equivalent -
+            countyDict[county].P_some_college -
+            countyDict[county].P_bachelor_and_above
+          ).toString(),
+        };
+      });
+      // console.log(tristate_school);
+
+      let pieColorScale = d3
+        .scaleOrdinal()
+        .domain(pieDomain)
+        .range(d3.schemeSet3);
+
+      function updatePie() {
+        let selected = d3.select(this);
+        var name;
+        try {
+          name = selected.datum().properties.name + " County";
+        } catch (TypeError) {
+          name = "New York County";
+        }
+        let d3pie = d3.pie().value((d) => {
+          return d[1];
+        });
+
+        let dataReady = d3pie(Object.entries(tristate_school[name]));
+        const u = pie.selectAll("path").data(dataReady);
+        u.join("path")
+          .transition()
+          .duration(1000)
+          .attr(
+            "d",
+            d3
+              .arc()
+              .innerRadius(0)
+              .outerRadius(Math.min(pieHeight, pieWidth) / 2 - pieMargin)
+          )
+          .attr("fill", function (d) {
+            return pieColorScale(d.data[0]);
+          })
+          .attr("stroke", "white")
+          .style("stroke-width", "2px")
+          .style("opacity", 1);
+
+        pie.select("text").text("Education Level Breakdown of " + name);
+      }
+      updatePie();
+
+    };
 
     requestData();
 
