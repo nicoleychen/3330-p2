@@ -13,8 +13,12 @@
       }
 
       .gridlines line {
-        stroke: gray;
+        stroke: lightgray;
         stroke-width: 1px;
+      }
+
+      .gridlines .domain {
+        stroke: none;
       }
     </style>
   </head>
@@ -493,7 +497,7 @@
         const unemploymentData = await unemploymentPreprocess();
 
         const linechartSvg = d3.select("#linechart");
-        const linechartMargin = { top: 10, right: 10, bottom: 50, left: 50 };
+        const linechartMargin = { top: 10, right: 10, bottom: 50, left: 70 };
         const linechartWidth =
           linechartSvg.attr("width") -
           linechartMargin.left -
@@ -514,6 +518,7 @@
             `translate(${linechartMargin.left},${linechartMargin.top})`
           );
 
+        // Line chart y axis (unemployment rate)
         let unemploymentScale = d3
           .scaleLinear()
           .domain([0, 1])
@@ -542,6 +547,7 @@
           )
           .call(linechartLeftGridlines);
 
+        // Line chart x axis (date)
         let dateScale = d3
           .scaleTime()
           .domain([new Date("January 1990"), new Date("December 2016")])
@@ -572,7 +578,34 @@
           )
           .call(linechartBottomGridlines);
 
+        // Line chart axes labels
+        linechartAnnotations
+          .append("text")
+          .text("Date")
+          .attr("text-anchor", "middle")
+          .attr("x", linechartWidth / 2 + linechartMargin.left)
+          .attr("y", linechartHeight + linechartMargin.top + 45);
+        linechartAnnotations
+          .append("text")
+          .text("Unemployment Rate")
+          .attr("text-anchor", "middle")
+          .attr(
+            "transform",
+            `translate(${15},${linechartHeight / 2}) rotate(-90)`
+          );
+
+        // Line chart mouse effects setup
         let linechartMouseGroup = linechartArea.append("g");
+        let xMarker = linechartMouseGroup
+          .append("line")
+          .attr("id", "xMarker")
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", 1)
+          .attr("y1", 0)
+          .attr("y2", linechartHeight)
+          .attr("visibility", "hidden");
+
         let valueMarker = linechartMouseGroup
           .append("circle")
           .attr("id", "valueMarker")
@@ -582,7 +615,7 @@
           .attr("r", 10)
           .attr("visibility", "hidden");
 
-        let label = linechartMouseGroup
+        let linechartLabel = linechartMouseGroup
           .append("text")
           .attr("id", "label")
           .attr("visibility", "hidden");
@@ -595,23 +628,23 @@
           .attr("fill", "none")
           .attr("pointer-events", "all");
 
-        activeRegion.on("mouseover", function () {
-          valueMarker.attr("visibility", "");
-          label.attr("visibility", "");
-        });
-
         activeRegion.on("mouseout", function () {
+          xMarker.attr("visibility", "hidden");
           valueMarker.attr("visibility", "hidden");
-          label.attr("visibility", "hidden");
+          linechartLabel.attr("visibility", "hidden");
         });
 
+        // Update line chart for new county data
         function updateLineChart(county) {
           const countyData = unemploymentData[county];
           const TRANSITION_DURATION = 1000;
 
-          unemploymentScale.domain(
-            d3.extent(countyData, (d) => d.unemploymentRate)
+          // Change scale based on data extent
+          const unemploymentExtent = d3.extent(
+            countyData,
+            (d) => d.unemploymentRate
           );
+          unemploymentScale.domain(unemploymentExtent);
           linechartAnnotations
             .selectAll(".y.axis")
             .transition()
@@ -623,11 +656,11 @@
             .duration(TRANSITION_DURATION)
             .call(linechartLeftGridlines);
 
+          // Transition line from old data to new data
           let u = linechartArea.selectAll(".line").data([countyData]);
 
           u.enter()
             .append("path")
-            // .datum(countyData)
             .attr("class", "line")
             .merge(u)
             .transition()
@@ -638,16 +671,23 @@
                 .line()
                 .x((d) => dateScale(d.date))
                 .y((d) => unemploymentScale(d.unemploymentRate))
+                // .y0(unemploymentScale(unemploymentExtent[0]))
+                // .y1((d) => unemploymentScale(d.unemploymentRate))
                 .curve(d3.curveMonotoneX)
             )
             .attr("fill", "none")
             .attr("stroke", "steelblue")
             .attr("stroke-width", 1.5);
 
+          // Enable mouse effects upon first line drawn
+          activeRegion.on("mouseover", function () {
+            xMarker.attr("visibility", "");
+            valueMarker.attr("visibility", "");
+            linechartLabel.attr("visibility", "").raise();
+          });
+
           activeRegion.on("mousemove", function (evt) {
             let findDate = d3.bisector((d) => d.date).right;
-            // Update the position as you move
-
             // Get mouse location
             let location = d3.pointer(evt);
             let x = location[0];
@@ -662,22 +702,20 @@
             let xPos = dateScale(d.date);
             let yPos = unemploymentScale(d.unemploymentRate);
 
+            xMarker.attr("x1", xPos).attr("x2", xPos);
             valueMarker.attr("cx", xPos).attr("cy", yPos);
 
             let txt = d.unemploymentRate;
 
-            // We started with the following line, which has lots of overlaps
-            // label.attr("x",xPos).attr("y",yPos).text(txt);
-
             // Here's a simple way to remove overlaps and deliver a consistent user experience
-            label.text(txt);
+            linechartLabel.text(txt);
             if (xPos < chartWidth / 2.0) {
-              label
+              linechartLabel
                 .attr("x", xPos + 4)
                 .attr("y", 100)
                 .attr("text-anchor", "start");
             } else {
-              label
+              linechartLabel
                 .attr("x", xPos - 4)
                 .attr("y", chartHeight - 100)
                 .attr("text-anchor", "end");
