@@ -490,6 +490,14 @@
           "P_bachelor_and_above",
           "P_other",
         ];
+        let pieDomainDict = {
+          "P_below_middle_school":"below middle school",
+          "P_some_high_school": "some high school",
+          "P_high_school_equivalent": "high school equivalent",
+          "P_some_college":"some college",
+          "P_bachelor_and_above": "bachelor and above",
+          "P_other": "other"
+        }
 
         let tristate_school = {};
         countyNames.forEach((county) => {
@@ -576,6 +584,32 @@
             .attr("visibility", "");
         }
         // updatePie();
+
+        // pie legend
+
+        let pielegend = pie
+          .append("g")
+        // Add one dot in the legend for each name.
+        pielegend.selectAll("mydots")
+          .data(pieDomain)
+          .enter()
+          .append("circle")
+            .attr("cx", 100)
+            .attr("cy", function(d,i){ return 100 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("r", 7)
+            .style("fill", function(d){ return pieColorScale(d)})
+
+        // Add one dot in the legend for each name.
+        pielegend.selectAll("mylabels")
+          .data(pieDomain)
+          .enter()
+          .append("text")
+            .attr("x", 120)
+            .attr("y", function(d,i){ return 100 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+            .style("fill", function(d){ return pieColorScale(d)})
+            .text(function(d){ return pieDomainDict[d]})
+            .attr("text-anchor", "left")
+            .style("alignment-baseline", "middle")
 
         // Unemployment Line Chart =============================================
         const unemploymentData = await unemploymentPreprocess();
