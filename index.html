@@ -26,8 +26,6 @@
   <svg id="charts" height="400" width="400" style="margin: 20px"></svg>
   <svg id="pie"></svg>
   <script>
-
-
     // svg for map
     const svgMap = d3.select("#map");
 
@@ -50,7 +48,6 @@
     let barRace = svgMap.append("g")
       .attr("id", "points")
       .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
-
 
 
     const requestData = async function () {
@@ -238,11 +235,8 @@
       }
 
       function updateBar(name) {
-        // console.log("updating!!");
         data = countyDict[name + " County"];
         raceData = [];
-        // console.log(data);
-        // console.log(Object.keys(raceDict));
         Object.keys(raceDict).forEach(d => {
           let r = raceDict[d];
           let value = 0;
@@ -276,7 +270,9 @@
         let county = d3.select(this);
         let name = county.datum().properties.name;
         updateBar(name);
+        updatePie(name);
       }
+
       //      PIE CHART STUFF IS HERE AND DOWN
       //      PIE CHART STUFF IS HERE AND DOWN
       //      PIE CHART STUFF IS HERE AND DOWN
@@ -334,19 +330,19 @@
         .domain(pieDomain)
         .range(d3.schemeSet3);
 
-      function updatePie() {
-        let selected = d3.select(this);
-        var name;
-        try {
-          name = selected.datum().properties.name + " County";
-        } catch (TypeError) {
-          name = "New York County";
-        }
+      function updatePie(name) {
+        // let selected = d3.select(this);
+        // var name;
+        // try {
+        //   name = selected.datum().properties.name + " County";
+        // } catch (TypeError) {
+        //   name = "New York County";
+        // }
         let d3pie = d3.pie().value((d) => {
           return d[1];
         });
 
-        let dataReady = d3pie(Object.entries(tristate_school[name]));
+        let dataReady = d3pie(Object.entries(tristate_school[name + " County"]));
         const u = pie.selectAll("path").data(dataReady);
         u.join("path")
           .transition()
@@ -367,7 +363,7 @@
 
         pie.select("text").text("Education Level Breakdown of " + name);
       }
-      updatePie();
+      // updatePie();
 
     };
 
