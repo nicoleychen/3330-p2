@@ -78,7 +78,7 @@
       <p id="description">paragraph</p>
       <div id="visualizations">
         <div id="map-container">
-          <svg id="map" height="800" width="600"></svg>
+          <svg id="map" height="750" width="700"></svg>
           <svg id="legend" height="50" width="320"></svg>
         </div>
         <div id="sidebar">
@@ -421,6 +421,7 @@
           momesh.attr("d", "");
         }
 
+        // Bar Chart ===========================================================
         function updateBar(name) {
           data = countyDict[name + " County"];
           raceData = [];
@@ -435,27 +436,57 @@
             raceData.push(dataPoint);
           });
 
-          barRace
-            .selectAll("rect.bar")
-            .data(raceData)
-            .join("rect")
-            .attr("class", "bar")
-            .attr("fill", colorScale(10.111))
+          let barSelection = barRace.selectAll("rect").data(raceData);
+
+          barSelection
+            .enter()
+            .append("rect")
+            .merge(barSelection)
+            .transition()
+            .duration(1000)
             .attr("x", (d) => raceScale(d.race))
             .attr("y", (d) => percentScale(d.percent))
             .attr("height", (d) => percentScale(0) - percentScale(d.percent))
-            .attr("width", raceScale.bandwidth());
+            .attr("width", raceScale.bandwidth())
+            .attr("fill", colorScale(10.111));
 
-          barRace
-            .selectAll("text")
-            .data(raceData)
-            .join("text")
-            .text((d) => d3.format(".1%")(d.percent))
+          let textSelection = barRace.selectAll("#barlabel").data(raceData);
+
+          textSelection
+            .enter()
+            .append("text")
+            .attr("id", "barlabel")
             .style("font-size", 9)
             .style("font-family", "sans-serif")
             .attr("text-anchor", "middle")
+            .merge(textSelection)
+            .transition()
+            .duration(1000)
+            .text((d) => d3.format(".1%")(d.percent))
             .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
             .attr("y", (d) => percentScale(d.percent) - 3);
+
+          // barRace
+          //   .selectAll("rect.bar")
+          //   .data(raceData)
+          //   .join("rect")
+          //   .attr("class", "bar")
+          //   .attr("fill", colorScale(10.111))
+          //   .attr("x", (d) => raceScale(d.race))
+          //   .attr("y", (d) => percentScale(d.percent))
+          //   .attr("height", (d) => percentScale(0) - percentScale(d.percent))
+          //   .attr("width", raceScale.bandwidth());
+
+          // barRace
+          //   .selectAll("text")
+          //   .data(raceData)
+          //   .join("text")
+          //   .text((d) => d3.format(".1%")(d.percent))
+          //   .style("font-size", 9)
+          //   .style("font-family", "sans-serif")
+          //   .attr("text-anchor", "middle")
+          //   .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
+          //   .attr("y", (d) => percentScale(d.percent) - 3);
         }
         function onClick() {
           let county = d3.select(this);
