@@ -83,8 +83,9 @@
         </div>
         <div id="sidebar">
           <div id="text-pie">
-            <svg id="textbox" height="200" width="300"></svg>
-            <svg id="pie"></svg>
+            <svg id="textbox" height="200" width="230"></svg>
+            <svg id="pie" height="300" width="300"></svg>></svg>
+            <svg id="pielegend"></svg>
           </div>
           <svg id="linechart" height="250" width="500"></svg>
           <svg id="bar" height="400" width="400"></svg>
@@ -471,7 +472,7 @@
 
         let pie = d3
           .select("#pie")
-          .attr("width", pieWidth)
+          .attr("width", pieWidth )
           .attr("height", pieHeight + 50)
           .append("g")
           .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
@@ -587,16 +588,16 @@
 
         // pie legend
 
-        let pielegend = pie
-          .append("g")
+        let pielegend = d3
+          .select("#pielegend")
         // Add one dot in the legend for each name.
         pielegend.selectAll("mydots")
           .data(pieDomain)
           .enter()
           .append("circle")
-            .attr("cx", 100)
-            .attr("cy", function(d,i){ return 100 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
-            .attr("r", 7)
+            .attr("cx", 30)
+            .attr("cy", function(d,i){ return 150 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("r", 5)
             .style("fill", function(d){ return pieColorScale(d)})
 
         // Add one dot in the legend for each name.
@@ -604,11 +605,12 @@
           .data(pieDomain)
           .enter()
           .append("text")
-            .attr("x", 120)
-            .attr("y", function(d,i){ return 100 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
+            .attr("x", 50)
+            .attr("y", function(d,i){ return 150 + i*25}) // 100 is where the first dot appears. 25 is the distance between dots
             .style("fill", function(d){ return pieColorScale(d)})
             .text(function(d){ return pieDomainDict[d]})
             .attr("text-anchor", "left")
+            .style("font-size",14)
             .style("alignment-baseline", "middle")
 
         // Unemployment Line Chart =============================================
