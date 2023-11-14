@@ -4,162 +4,327 @@
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://d3js.org/topojson.v3.min.js"></script>
   <style>
-    .county {
-      fill: lightgrey;
-    }
+    /* .county {
+      stroke: white;
+    } */
 
     .outline {
       fill: none;
-      stroke: black;
+      stroke: white;
       stroke-width: 1px;
     }
 
-    .graticule {
-      fill: none;
-      stroke: grey;
+    .gridlines line {
+      stroke: gray;
       stroke-width: 1px;
-    }
-
-    .state-outline {
-      fill: none;
-      stroke: darkgray;
-      stroke-width: 3px;
     }
   </style>
 </head>
 
 <body>
-  <svg id="map" height="770" width="990" style="margin:20px"></svg>
+  <svg id="map" height="800" width="920" style="margin:20px"></svg>
+  <svg id="charts" height="400" width="400" style="margin:20px"></svg>
 
   <script>
-    const svg = d3.select("#map");
-    const width = svg.attr("width");
-    const height = svg.attr("height");
-    const margin = { top: 20, right: 20, bottom: 20, left: 20 };
-    const mapWidth = width - margin.left - margin.right;
-    const mapHeight = height - margin.top - margin.bottom;
-    const map = svg.append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+
+    // svg for map
+    const svgMap = d3.select("#map");
+
+    const marginMap = { top: 20, right: 20, bottom: 20, left: 20 };
+    const widthMap = svgMap.attr("width");
+    const heightMap = svgMap.attr("height");
+    const mapWidth = widthMap - marginMap.left - marginMap.right;
+    const mapHeight = heightMap - marginMap.top - marginMap.bottom;
+    const map = svgMap.append("g")
+      .attr("transform", "translate(" + marginMap.left + "," + marginMap.top + ")");
+
+    // svg for charts and graphs
+    const svgBar = d3.select("#charts");
+    const widthC = svgBar.attr("width");
+    const heightC = svgBar.attr("height");
+    const marginChart = { top: 10, right: 10, bottom: 50, left: 50 };
+    const chartWidth = widthC - marginChart.left - marginChart.right;
+    const chartHeight = heightC - marginChart.top - marginChart.bottom;
+    let annotations = svgMap.append("g").attr("id", "annotations");
+    let barRace = svgMap.append("g").attr("id", "points")
+      .attr("transform", "translate(" + marginChart.left + "," + marginChart.top + ")");
+
+
 
     const requestData = async function () {
       const internet = await d3.csv("kaggle_internet.csv");
       const tristate = await d3.json("countiesTriState.json");
-      const temp = await d3.json("borough.topo.json");
-
-      console.log("tristate", tristate);
-      // console.log(tristate.objects.counties)
-      // let arc = [6348, 6349, 6350, -3733, 6351]
-      // let arc = [[-3733, 6351, 6348, 6349, 6350]]
       let arc = [[-3733, 6351]]
       tristate.objects.counties.geometries[4].arcs = arc;
       var counties = topojson.feature(tristate, tristate.objects.counties);     // List of state outlines to fill
       var countiesMesh = topojson.mesh(tristate, tristate.objects.counties);    // 'Mesh' of all outlines put together for a stroke
-      // var projection = d3.geoAlbersUsa().fitSize([mapWidth, mapHeight], counties)
       var projection = d3.geoMercator().fitSize([mapWidth, mapHeight], counties);
       var path = d3.geoPath().projection(projection);
-      // var path = d3.geoPath(projection);
-      let graticule = d3.geoGraticule10();
-      map.append("path")
-        .attr("class", "graticule").attr("d", path(graticule));
 
-      // 2c. Draw states and outlines (see CSS at the top)
+
+      // Draw counties and outlines (see CSS at the top)
       let countyPaths = map.selectAll("path.county").data(counties.features)
         .join("path")
         .attr("class", "county")
-        // .attr("note", d => d.id)  // debugging
         .attr("d", path)
         .on('mouseover', mouseEntersState)
-        .on('mouseout', mouseLeavesState);
+        .on('mouseout', mouseLeavesState)
+        .on('click', onClick);
 
       map.append("path").datum(countiesMesh)
         .attr("class", "outline")
+        .attr("stroke", 'white')
         .attr("d", path);
 
       let stateNames = ['NY', 'CT', 'NJ']
       let countyNames = ['Orange', 'Dutchess', 'Ulster', 'Nassau', 'Sullivan', 'Rockland', 'Putnam', 'Passaic', 'Hudson', 'Bergen', 'Westchester', 'Richmond', 'Bronx', 'New York', 'Queens', 'Kings', 'Middlesex', 'Monmouth', 'Ocean', 'Somerset', 'Essex', 'Union', 'Morris', 'Sussex', 'Hunterdon', 'Mercer', 'Fairfield', 'New Haven', 'Litchfield', 'Suffolk']
       let tristate_internet = internet.filter(d => (countyNames.includes(d["county"].replace(' County', ''))) && stateNames.includes(d['state']));
 
-      var countyDict = {}   // stateID ===> stateData
+      var countyDict = {}
       tristate_internet.forEach(d => {
         let county = d.county;
         countyDict[county] = d;
       });
 
       const minMax = d3.extent(tristate_internet, d => Number(d.percent_no_internet));
-      console.log(minMax)
-      // const colorScale = d3
-      //   .scaleLinear()
-      //   .domain(d3.map(tristate_internet, d => d.percent_no_internet))
-      //   .range(['white', 'blue']);
       const colorScale = d3.scaleSequential()
-        // .interpolator(d3.interpolateBuPu)
         .interpolator(d3.interpolateYlGnBu)
         .domain(minMax);
+
       map.selectAll(".county")
         .style("fill", d => colorScale(countyDict[(d.properties.name + " County")].percent_no_internet));
 
-      let tooltipWidth = 120;
+      let momesh = map.append("path")
+        .attr("class", "mouseover outline")
+        .style("stroke", "black")
+        .style("stroke-width", 3)
+        .attr("d", "");
+
+      let tooltipWidth = 140;
       let tooltipHeight = 40;
       var format = d3.format(".2f")
       let tooltip = map.append("g")
         .attr("class", "tooltip")
         .attr("visibility", "hidden");
       tooltip.append("rect")
-        .attr("fill", "lightgray")
+        .attr("fill", "lightgrey")
         .attr("opacity", 0.9)
         .attr("x", -tooltipWidth / 2.0)
         .attr("y", 0)
         .attr("width", tooltipWidth)
         .attr("height", tooltipHeight);
+      let name_text = tooltip.append("text")
+        .attr("fill", "black")
+        .attr("text-anchor", "middle")
+        .attr("alignment-baseline", "hanging")
+        .style("font-family", "Tahoma, sans-serif")
+        .attr("x", 0)
+        .attr("y", 2);
       let percentage_text = tooltip.append("text")
         .attr("fill", "black")
         .attr("text-anchor", "middle")
         .attr("alignment-baseline", "hanging")
         .attr("x", 0)
-        .attr("y", 2);
-      let name_text = tooltip.append("text")
-        .attr("fill", "black")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "hanging")
-        .attr("x", 5)
-        .attr("y", 9);
+        .style("font-family", "Tahoma, sans-serif")
+        .style("font-size", 14)
+        .attr("y", 22);
 
+      Legend(colorScale, {
+        title: "Percentage of population with no internet",
+        tickFormat: d => d + "%"
+      });
 
+      barRace.append("text")
+        .text("Race Breakdown of County")
+        .attr("x", 10)
+        .attr("y", 20)
+        .style("font-size", "15px");
+      let raceDict = {
+        P_asian: "Asian",
+        P_black: "Black",
+        P_hawaiian: "Hawaiian",
+        P_native: "Native",
+        P_white: 'White',
+        P_others: 'Other'
+      }
+      const percentScale = d3.scaleLinear()
+        .domain([0, 1])
+        .range([chartHeight, 0]);
+      race = ['White', 'Black', 'Asian', 'Hawaiian', 'Native', 'Other'];
+      const raceScale = d3.scaleBand()
+        .domain(race)
+        .range([0, chartWidth])
+        .padding(0.05);
+
+      let leftAxis = d3.axisLeft(percentScale).tickFormat(d3.format('.0%'));
+      let leftGridlines = d3.axisLeft(percentScale)
+        .tickSize(-chartWidth - 10)
+        .tickFormat("")
+
+      annotations.append("g")
+        .attr("class", "y axis")
+        .attr("transform", `translate(${marginChart.left - 10},${marginChart.top})`)
+        .call(leftAxis)
+      annotations.append("g")
+        .attr("class", "gridlines")
+        .attr("transform", `translate(${marginChart.left - 10},${marginChart.top})`)
+        .call(leftGridlines);
+
+      let bottomAxis = d3.axisBottom(raceScale)
+      annotations.append("g")
+        .attr("class", "x axis")
+        .attr("transform", `translate(${marginChart.left},${chartHeight + marginChart.top + 10})`)
+        .call(bottomAxis);
+
+      // console.log(tristate.objects.counties);
       function mouseEntersState() {
-        // Make tooltip visible
-        tooltip.style("visibility", "visible")
-
-        // Find the state SVG element and add stroke
+        tooltip.style("visibility", "visible") // Make tooltip visible
         let county = d3.select(this);
-        county.attr("stroke", "black")
-          .attr("stroke-width", 3);
         let name = county.datum().properties.name;
-        // console.log(county.datum())
         let countyData = countyDict[name + " County"];
+
+        var mo = topojson.mesh(tristate, tristate.objects.counties, function (a, b) { return a.properties.name === name || b.properties.name === name; });
+        momesh.datum(mo).attr("d", path)
+
         percentage_text.text(format(countyData.percent_no_internet) + "%");
-        console.log(name)
+        name_text.text(name + " County");
 
         let bounds = path.bounds(county.datum());
         let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
-        let yPos = bounds[0][1] + 50;
+        let yPos = bounds[1][1] - 15;
         tooltip.attr("transform", `translate(${xPos},${yPos})`);
-
       }
+
       function mouseLeavesState() {
-
-        // Hide when you leave a state
         tooltip.style("visibility", "hidden");
-
-        let county = d3.select(this);
-        county.attr("stroke", "none")
-          .attr("stroke-width", 0);
+        momesh.attr("d", "");
       }
 
+      function updateBar(name) {
+        // console.log("updating!!");
+        data = countyDict[name + " County"];
+        raceData = [];
+        // console.log(data);
+        // console.log(Object.keys(raceDict));
+        Object.keys(raceDict).forEach(d => {
+          let r = raceDict[d];
+          let value = 0;
+          console.log(data[d]);
+          if (data[d] != 'NA') {
+            value = Number(data[d]) / data['P_total'];
+          }
+          const dataPoint = { race: r, percent: value };
+          raceData.push(dataPoint);
+        })
+
+        barRace.selectAll('rect.bar').data(raceData)
+          .join('rect')
+          .attr('class', 'bar')
+          .attr("fill", colorScale(10.111))
+          .attr("x", d => raceScale(d.race))
+          .attr("y", d => percentScale(d.percent))
+          .attr("height", d => percentScale(0) - percentScale(d.percent))
+          .attr("width", raceScale.bandwidth());
+
+        barRace.selectAll('text').data(raceData)
+          .join('text')
+          .text(d => d3.format('.1%',)(d.percent))
+          .style("font-size", 9)
+          .style("font-family", "sans-serif")
+          .attr("text-anchor", "middle")
+          .attr("x", d => raceScale(d.race) + raceScale.bandwidth() / 2)
+          .attr("y", d => percentScale(d.percent) - 3);
+      }
+      function onClick() {
+        let county = d3.select(this);
+        let name = county.datum().properties.name;
+        updateBar(name);
+      }
     }
 
     requestData();
 
   </script>
+  <script>
+    // function Legend from "@d3/color-legend"
+    function Legend(color, {
+      title,
+      tickSize = 6,
+      width = 320,
+      height = 44 + tickSize,
+      marginTop = 18,
+      marginRight = 0,
+      marginBottom = 16 + tickSize,
+      marginLeft = 0,
+      ticks = width / 64,
+      tickFormat,
+      tickValues
+    } = {}) {
+      function ramp(color, n = 256) {
+        const canvas = document.createElement("canvas");
+        canvas.width = n;
+        canvas.height = 1;
+        const context = canvas.getContext("2d");
+        for (let i = 0; i < n; ++i) {
+          context.fillStyle = color(i / (n - 1));
+          context.fillRect(i, 0, 1, 1);
+        }
+        return canvas;
+      }
+
+      const svgLegend = d3.select("svg")
+        .attr("width", width)
+        .attr("height", height)
+        .attr("viewBox", [0, 0, width, height])
+        .style("overflow", "visible")
+        .style("display", "block");
+
+      let tickAdjust = g => g.selectAll(".tick line").attr("y1", marginTop + marginBottom - height);
+      let x;
+      x = Object.assign(color.copy()
+        .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
+        { range() { return [marginLeft, width - marginRight]; } });
+
+      svgLegend.append("image")
+        .attr("x", marginLeft)
+        .attr("y", marginTop)
+        .attr("width", width - marginLeft - marginRight)
+        .attr("height", height - marginTop - marginBottom)
+        .attr("preserveAspectRatio", "none")
+        .attr("xlink:href", ramp(color.interpolator()).toDataURL());
+
+      if (!x.ticks) {
+        if (tickValues === undefined) {
+          const n = Math.round(ticks + 1);
+          tickValues = d3.range(n).map(i => d3.quantile(color.domain(), i / (n - 1)));
+        }
+        if (typeof tickFormat !== "function") {
+          tickFormat = d3.format(tickFormat === undefined ? ",f" : tickFormat);
+        }
+      }
+      svgLegend.append("g")
+        .attr("transform", `translate(0,${height - marginBottom})`)
+        .call(d3.axisBottom(x)
+          .ticks(ticks, typeof tickFormat === "string" ? tickFormat : undefined)
+          .tickFormat(typeof tickFormat === "function" ? tickFormat : undefined)
+          .tickSize(tickSize)
+          .tickValues(tickValues))
+        .call(tickAdjust)
+        .call(g => g.select(".domain").remove())
+        .call(g => g.append("text")
+          .attr("x", marginLeft)
+          .attr("y", marginTop + marginBottom - height - 6)
+          .attr("fill", "currentColor")
+          .attr("text-anchor", "start")
+          .attr("font-weight", "bold")
+          .text(title));
+
+      return svgLegend.node();
+    }
+  </script>
+
+
 </body>
 
 </html>

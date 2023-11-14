@@ -12,6 +12,14 @@ namesNJ = ['Bergen', 'Middlesex', 'Monmouth', 'Ocean', 'Somerset', 'Essex', 'Uni
 namesCT = ['Fairfield', 'New Haven', 'Litchfield' ]
 namesAll = namesNY + namesNJ + namesCT
 
+states = data['objects']['states']
+temp2 = []
+for i in states['geometries']:
+    if i['id'] in want:
+        temp2.append(i)
+statesNew = { 'type': "GeometryCollection", 'geometries': temp2 }
+
+
 
 for i in countiesAll['geometries']:
     newProperties = { 'idFIPS': "", 'idState': "", 'name': "" }
@@ -42,7 +50,7 @@ for i in countiesAll['geometries']:
         newGeometry['properties'] = newProperties
         countiesGeometry.append(newGeometry)
 countiesNew = { 'type': "GeometryCollection", 'geometries': countiesGeometry }
-dataNew = { 'type': "Topology", 'arcs': arcsAll, 'transform': data['transform'],'objects': { 'counties': countiesNew } }
+dataNew = { 'type': "Topology", 'arcs': arcsAll, 'transform': data['transform'],'objects': { 'counties': countiesNew, 'states': statesNew } }
 # print(dataNew)
 
 with open("countiesTriState.json", "w") as outfile:

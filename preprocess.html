@@ -12,9 +12,18 @@
       const data = await d3.json("counties-albers-10m.json");
       const temp = await d3.json("countiesTriState.json")
       console.log("data", data);
+
       let arcsAll = data.arcs;
       let countiesAll = data.objects.counties;
+      let states = data.objects.states;
       const want = ["36", "34", "09"]
+      console.log(states)
+      let temp2 = [];
+      temp2.push(states.geometries[6]);
+      temp2.push(states.geometries[49]);
+      temp2.push(states.geometries[47]);
+      let statesNew = { type: "GeometryCollection", geometries: temp2 };
+      console.log(statesNew);
 
       let countiesGeometry = [];
       countiesAll.geometries.forEach((d, i) => {
