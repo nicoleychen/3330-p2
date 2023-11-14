@@ -4,15 +4,57 @@
     <script src="https://d3js.org/topojson.v3.min.js"></script>
     <link
       href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500&display=swap"
-      rel="stylesheet" />
+      rel="stylesheet"
+    />
     <style>
       body {
         font-family: "Open Sans", sans-serif;
         font-weight: 500;
       }
+
+      #textbox {
+        background-color: black;
+      }
+
+      .container {
+        width: 100%;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #title {
+        width: 100%;
+        text-align: center;
+      }
+
+      #description {
+        width: 100%;
+      }
+
+      #visualizations {
+        display: flex;
+        flex-direction: row;
+      }
+
+      #map-container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #sidebar {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #text-pie {
+        display: flex;
+        flex-direction: row;
+      }
+
       /* .county {
-      stroke: white;
-    } */
+        stroke: white;
+      } */
       .outline {
         fill: none;
         stroke: white;
@@ -31,11 +73,24 @@
   </head>
 
   <body>
-    <svg id="map" height="800" width="920" style="margin: 20px"></svg>
-    <svg id="legend" height="50" width="320" style="margin: 20px"></svg>
-    <svg id="bar" height="400" width="400" style="margin: 20px"></svg>
-    <svg id="pie"></svg>
-    <svg id="linechart" height="250" width="500" style="margin: 20px"></svg>
+    <div class="container">
+      <div id="title">title</div>
+      <p id="description">paragraph</p>
+      <div id="visualizations">
+        <div id="map-container">
+          <svg id="map" height="800" width="600"></svg>
+          <svg id="legend" height="50" width="320"></svg>
+        </div>
+        <div id="sidebar">
+          <div id="text-pie">
+            <svg id="textbox" height="200" width="300"></svg>
+            <svg id="pie"></svg>
+          </div>
+          <svg id="linechart" height="250" width="500"></svg>
+          <svg id="bar" height="400" width="400"></svg>
+        </div>
+      </div>
+    </div>
     <script>
       // Preprocess county unemployment dataset
       const unemploymentPreprocess = async function () {
@@ -410,8 +465,8 @@
         }
 
         // Pie Chart ===========================================================
-        let pieHeight = 600;
-        let pieWidth = 600;
+        let pieHeight = 300;
+        let pieWidth = 300;
         let pieMargin = 40;
 
         let pie = d3
