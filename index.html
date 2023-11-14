@@ -25,6 +25,7 @@
 
   <body>
     <svg id="map" height="800" width="920" style="margin: 20px"></svg>
+    <svg id="legend" height="50" width="320" style="margin: 20px"></svg>
     <svg id="bar" height="400" width="400" style="margin: 20px"></svg>
     <svg id="pie"></svg>
     <svg id="linechart" height="250" width="500" style="margin: 20px"></svg>
@@ -757,7 +758,7 @@
         }
 
         const svgLegend = d3
-          .select("svg")
+          .select("#legend")
           .attr("width", width)
           .attr("height", height)
           .attr("viewBox", [0, 0, width, height])
