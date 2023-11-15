@@ -3,16 +3,26 @@
 <head>
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://d3js.org/topojson.v3.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
   <style>
     body {
       font-family: "Open Sans", sans-serif;
       font-weight: 500;
     }
 
-    #textbox {
-      background-color: black;
-    }
+      #textbox {
+        /* background-color: gray; */
+        /* width: 100%; */
+        height: 120px;
+        padding: 12px 20px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 6px;
+        background-color: #f8f8f8;
+        font-size: 16px;
+        resize: none;
+        /* visibility:hidden; */
+      }
 
     .container {
       width: 100%;
@@ -49,6 +59,10 @@
       display: flex;
       flex-direction: row;
     }
+    #text-legend{
+      display:flex;
+      flex-direction:column;
+    }
 
     /* .county {
         stroke: white;
@@ -81,9 +95,13 @@
       </div>
       <div id="sidebar">
         <div id="text-pie">
-          <svg id="textbox" height="200" width="230"></svg>
+          <div id="text-legend">
+            <svg id="textbox" height="200" width="230"></svg>
+            <svg id="pielegend"></svg>
+          </div>
+          
           <svg id="pie" height="300" width="300"></svg>></svg>
-          <svg id="pielegend"></svg>
+          
         </div>
         <svg id="linechart" height="250" width="500"></svg>
         <svg id="bar" height="400" width="400"></svg>
@@ -323,11 +341,88 @@
         .attr("x", 0)
         .style("font-size", 13)
         .attr("y", 22);
+      
+      // console.log(tristate.objects.counties);
+      function mouseEntersState() {
+        tooltip.style("visibility", "visible"); // Make tooltip visible
+        let county = d3.select(this);
+        let name = county.datum().properties.name;
+        let countyData = countyDict[name + " County"];
+
+        var mo = topojson.mesh(
+          tristate,
+          tristate.objects.counties,
+          function (a, b) {
+            return a.properties.name === name || b.properties.name === name;
+          }
+        );
+        momesh.datum(mo).attr("d", path);
+
+        percentage_text.text(format(countyData.percent_no_internet) + "%");
+        name_text.text(name + " County");
+
+        let bounds = path.bounds(county.datum());
+        let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
+        let yPos = bounds[1][1] - 15;
+        tooltip.attr("transform", `translate(${xPos},${yPos})`);
+      }
+
+      function mouseLeavesState() {
+        tooltip.style("visibility", "hidden");
+        momesh.attr("d", "");
+      }
+      function onClick() {
+        let county = d3.select(this);
+        let name = county.datum().properties.name;
+        updateBar(name);
+        updatePie(name);
+        updateLineChart(name + " County");
+        updateTextBox(name);
+      }
 
       Legend(colorScale, {
         title: "Percentage of population with no internet",
         tickFormat: (d) => d + "%",
       });
+
+        // Info Box ===========================================================
+        let textWidth = 230;
+        let textHeight = 140;
+        let infobox = d3
+          .select("#textbox");
+          // .attr("width", textWidth )
+          // .attr("height", textHeight);
+          // .append("g");
+        box = infobox.append("g");
+        
+        function updateTextBox(name){
+          // infobox.attr("visibility", "visible");
+
+          data = countyDict[name + " County"];
+          console.log(data)
+          box.selectAll("text")
+            .remove();
+          box.append("text")
+          // .attr("text-anchor", "middle")
+          .attr("x", 10)
+          .attr("y", 30)
+          .style("font-size", 16)
+          .style("font-weight", 600)
+          .text(data.county+", "+data.state);
+          box.append("text")
+            .attr("x", 0)
+            .attr("y", 70)
+            .style("font-size", 11)
+            .text("Median Household Income: "+data.median_household_income);
+          box.append("text")
+            .attr("x", 0)
+            .attr("y", 85)
+            .style("font-size", 11)
+            .text("Median Age: " + data.median_age);
+        }
+
+
+        // Bar Chart ===========================================================
 
       barRace
         .append("text")
@@ -388,35 +483,6 @@
         )
         .call(bottomAxis);
 
-      // console.log(tristate.objects.counties);
-      function mouseEntersState() {
-        tooltip.style("visibility", "visible"); // Make tooltip visible
-        let county = d3.select(this);
-        let name = county.datum().properties.name;
-        let countyData = countyDict[name + " County"];
-
-        var mo = topojson.mesh(
-          tristate,
-          tristate.objects.counties,
-          function (a, b) {
-            return a.properties.name === name || b.properties.name === name;
-          }
-        );
-        momesh.datum(mo).attr("d", path);
-
-        percentage_text.text(format(countyData.percent_no_internet) + "%");
-        name_text.text(name + " County");
-
-        let bounds = path.bounds(county.datum());
-        let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
-        let yPos = bounds[1][1] - 15;
-        tooltip.attr("transform", `translate(${xPos},${yPos})`);
-      }
-
-      function mouseLeavesState() {
-        tooltip.style("visibility", "hidden");
-        momesh.attr("d", "");
-      }
 
       // Bar Chart ===========================================================
       function updateBar(name) {
@@ -484,13 +550,6 @@
         //   .attr("text-anchor", "middle")
         //   .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
         //   .attr("y", (d) => percentScale(d.percent) - 3);
-      }
-      function onClick() {
-        let county = d3.select(this);
-        let name = county.datum().properties.name;
-        updateBar(name);
-        updatePie(name);
-        updateLineChart(name + " County");
       }
 
       // Pie Chart ===========================================================
@@ -677,21 +736,21 @@
         .select("#pielegend")
       // Add one dot in the legend for each name.
       pielegend.selectAll("mydots")
-        .data(pieDomain)
+        .data(Object.keys(pieDomainDict))
         .enter()
         .append("circle")
-        .attr("cx", 30)
-        .attr("cy", function (d, i) { return 150 + i * 25 }) // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("cx", 60)
+        .attr("cy", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
         .attr("r", 5)
         .style("fill", function (d) { return pieColorScale(d) })
 
       // Add one dot in the legend for each name.
       pielegend.selectAll("mylabels")
-        .data(pieDomain)
+        .data(Object.keys(pieDomainDict))
         .enter()
         .append("text")
-        .attr("x", 50)
-        .attr("y", function (d, i) { return 150 + i * 25 }) // 100 is where the first dot appears. 25 is the distance between dots
+        .attr("x", 75)
+        .attr("y", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
         .style("fill", function (d) { return pieColorScale(d) })
         .text(function (d) { return pieDomainDict[d] })
         .attr("text-anchor", "left")
