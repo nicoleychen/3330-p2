@@ -413,7 +413,7 @@
             .attr("x", 0)
             .attr("y", 70)
             .style("font-size", 11)
-            .text("Median Household Income: "+data.median_household_income);
+            .text("Median Household Income: $"+data.median_household_income);
           box.append("text")
             .attr("x", 0)
             .attr("y", 85)
@@ -594,7 +594,7 @@
           P_some_high_school: countyDict[county].P_some_high_school,
           P_high_school_equivalent:
             countyDict[county].P_high_school_equivalent,
-          P_some_collegel: countyDict[county].P_some_college,
+          P_some_college: countyDict[county].P_some_college,
           P_bachelor_and_above: countyDict[county].P_bachelor_and_above,
           P_other: (
             countyDict[county].P_total -
@@ -611,7 +611,7 @@
       let pieColorScale = d3
         .scaleOrdinal()
         .domain(pieDomain)
-        .range(d3.schemeSet3);
+        .range(d3.schemeSet2);
 
       function updatePie(name) {
         // let selected = d3.select(this);
@@ -645,6 +645,7 @@
           .arc()
           .innerRadius(0)
           .outerRadius(Math.min(pieHeight, pieWidth) / 2 + 25);
+        console.log(pieColorScale("P_some_college"));
 
         const u = pie.selectAll("path").data(dataReady);
         u.join("path")
@@ -652,6 +653,7 @@
           .duration(1000)
           .attr("d", arcGenerator)
           .attr("fill", function (d) {
+            console.log(d);
             return pieColorScale(d.data[0]);
           })
           .attr("stroke", "white")
@@ -734,6 +736,7 @@
 
       let pielegend = d3
         .select("#pielegend")
+      console.log(pieColorScale("P_some_college"));
       // Add one dot in the legend for each name.
       pielegend.selectAll("mydots")
         .data(Object.keys(pieDomainDict))
