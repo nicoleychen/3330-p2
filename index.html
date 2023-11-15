@@ -534,7 +534,7 @@
           .tickFormat("");
         annotations
           .append("text")
-          .text("Race Breakdown of County")
+          .text("Race Breakdown of County (2016)")
           .attr("class", "chart-title")
           .attr("x", marginChart.left)
           .attr("y", marginChart.top - 10);
@@ -666,7 +666,7 @@
         pie
           .append("text")
           .attr("text-anchor", "middle")
-          .attr("font-size", 10)
+          .attr("font-size", 9)
           .attr("x", 0)
           .attr("y", -100);
         let pieDomain = [
@@ -796,7 +796,9 @@
 
           pie
             .select("text")
-            .text("Education Level Breakdown of " + name + " County");
+            .text(
+              "Education Level Breakdown of " + name + " County" + " (2016)"
+            );
         }
 
         // pie legend
