@@ -215,22 +215,6 @@
         "translate(" + marginMap.left + "," + marginMap.top + ")"
       );
 
-    // svg for charts and graphs
-    const svgBar = d3.select("#bar");
-    const widthBar = svgBar.attr("width");
-    const heightBar = svgBar.attr("height");
-    const marginChart = { top: 30, right: 10, bottom: 50, left: 70 };
-    const chartWidth = widthBar - marginChart.left - marginChart.right;
-    const chartHeight = heightBar - marginChart.top - marginChart.bottom;
-    let annotations = svgBar.append("g").attr("id", "annotations");
-    let barRace = svgBar
-      .append("g")
-      .attr("id", "points")
-      .attr(
-        "transform",
-        "translate(" + marginChart.left + "," + marginChart.top + ")"
-      );
-
     const requestData = async function () {
       // Internet Map ========================================================
       const internet = await d3.csv("kaggle_internet.csv");
@@ -408,40 +392,45 @@
       // Info Box ===========================================================
       let textWidth = 230;
       let textHeight = 180;
-      let infobox = d3
-        .select("#textbox");
+      let infobox = d3.select("#textbox");
       // .attr("width", textWidth )
       // .attr("height", textHeight);
       // .append("g");
       box = infobox.append("g");
-      let boxCountyName = box.append("text")
+      let boxCountyName = box
+        .append("text")
         .attr("text-anchor", "start")
         .text("Select a County")
         .attr("x", 0)
         .attr("y", 15)
         .style("font-size", 16)
         .style("font-weight", 600);
-      let boxTotalPop = box.append("text")
+      let boxTotalPop = box
+        .append("text")
         .text("Total Population:")
         .attr("x", 0)
         .attr("y", 33)
         .style("font-size", 11);
-      let boxInternet = box.append("text")
+      let boxInternet = box
+        .append("text")
         .text("Percent with No Internet: ")
         .attr("x", 0)
         .attr("y", 48)
         .style("font-size", 11);
-      let boxMedianIncome = box.append("text")
+      let boxMedianIncome = box
+        .append("text")
         .text("Median Household Income:")
         .attr("x", 0)
         .attr("y", 63)
         .style("font-size", 11);
-      let boxMedianAge = box.append("text")
+      let boxMedianAge = box
+        .append("text")
         .text("Median Age:")
         .attr("x", 0)
         .attr("y", 78)
         .style("font-size", 11);
-      let boxPoverty = box.append("text")
+      let boxPoverty = box
+        .append("text")
         .text("Percentage Below Poverty Line:")
         .attr("x", 0)
         .attr("y", 93)
@@ -450,27 +439,47 @@
       function updateTextBox(name) {
         // infobox.attr("visibility", "visible");
         data = countyDict[name + " County"];
-        console.log(data)
+        console.log(data);
         // box.selectAll("text")
         //   .remove();
-        boxTotalPop
-          .text("Total Population: " + d3.format(",r")(data.P_total));
-        boxInternet
-          .text("Percent with No Internet: " + d3.format(".2%")(Number(data.percent_no_internet) / 100));
-        boxCountyName
-          .text(data.county + ", " + data.state);
-        boxMedianIncome
-          .text("Median Household Income: " + d3.format("($,.0f")(data.median_household_income));
-        boxMedianAge
-          .text("Median Age: " + data.median_age);
-        let poverty = d3.format(".2%")(Number(data.P_below_poverty) / Number(data.P_total));
-        boxPoverty
-          .text("Percentage Below Poverty: " + poverty)
+        boxTotalPop.text(
+          "Total Population: " + d3.format(",r")(data.P_total)
+        );
+        boxInternet.text(
+          "Percent with No Internet: " +
+          d3.format(".2%")(Number(data.percent_no_internet) / 100)
+        );
+        boxCountyName.text(data.county + ", " + data.state);
+        boxMedianIncome.text(
+          "Median Household Income: " +
+          d3.format("($,.0f")(data.median_household_income)
+        );
+        boxMedianAge.text("Median Age: " + data.median_age);
+        let poverty = d3.format(".2%")(
+          Number(data.P_below_poverty) / Number(data.P_total)
+        );
+        boxPoverty.text("Percentage Below Poverty: " + poverty);
       }
 
-
       // Bar Chart ===========================================================
-
+      const svgBar = d3.select("#bar");
+      const widthBar = svgBar.attr("width");
+      const heightBar = svgBar.attr("height");
+      const marginChart = { top: 30, right: 10, bottom: 50, left: 70 };
+      const chartWidth = widthBar - marginChart.left - marginChart.right;
+      const chartHeight = heightBar - marginChart.top - marginChart.bottom;
+      let annotations = svgBar.append("g").attr("id", "annotations");
+      let barRace = svgBar
+        .append("g")
+        .attr("id", "points")
+        .attr(
+          "transform",
+          "translate(" + marginChart.left + "," + marginChart.top + ")"
+        );
+      svgBar.attr(
+        "width",
+        Number(d3.select("#bar-div").style("width").replace("px", "")) - 20
+      );
 
       let raceDict = {
         P_asian: "Asian",
@@ -514,9 +523,9 @@
         .attr("class", "chartlabel")
         .attr(
           "transform",
-          `translate(${12},${chartHeight / 2 + marginChart.bottom + 20}) rotate(-90)`
+          `translate(${12},${chartHeight / 2 + marginChart.bottom + 20
+          }) rotate(-90)`
         );
-
 
       annotations
         .append("g")
@@ -546,8 +555,6 @@
         )
         .call(bottomAxis);
 
-
-      // Bar Chart ===========================================================
       function updateBar(name) {
         data = countyDict[name + " County"];
         raceData = [];
@@ -616,23 +623,23 @@
       }
 
       // Pie Chart ===========================================================
-      let pieHeight = 300;
-      let pieWidth = 300;
+      let pieHeight = 250;
+      let pieWidth = 250;
       let pieMargin = 40;
 
       let pie = d3
         .select("#pie")
         .attr("width", pieWidth)
-        .attr("height", pieHeight + 50)
+        .attr("height", pieHeight)
         .append("g")
         .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
 
       pie
         .append("text")
         .attr("text-anchor", "middle")
-        .attr("font-size", 20)
+        .attr("font-size", 10)
         .attr("x", 0)
-        .attr("y", 300);
+        .attr("y", -100);
       let pieDomain = [
         "P_some_high_school",
         "P_high_school_equivalent",
@@ -642,13 +649,13 @@
         "P_bachelor_and_above",
       ];
       let pieDomainDict = {
-        "P_below_middle_school": "below middle school",
-        "P_some_high_school": "some high school",
-        "P_high_school_equivalent": "high school equivalent",
-        "P_some_college": "some college",
-        "P_bachelor_and_above": "bachelor and above",
-        "P_other": "other"
-      }
+        P_below_middle_school: "below middle school",
+        P_some_high_school: "some high school",
+        P_high_school_equivalent: "high school equivalent",
+        P_some_college: "some college",
+        P_bachelor_and_above: "bachelor and above",
+        P_other: "unknown",
+      };
 
       let tristate_school = {};
       countyNames.forEach((county) => {
@@ -713,7 +720,7 @@
         const u = pie.selectAll("path").data(dataReady);
         u.join("path")
           .transition()
-          .duration(1000)
+          .duration(750)
           .attr("d", arcGenerator)
           .attr("fill", function (d) {
             console.log(d);
@@ -731,6 +738,8 @@
           .data(dataReady)
           .enter()
           .append("polyline")
+          .transition()
+          .duration(500)
           .attr("stroke", "black")
           .attr("class", "pieLabel")
           .style("fill", "none")
@@ -750,6 +759,9 @@
           .data(dataReady)
           .enter()
           .append("text")
+          .style("font-size", 10)
+          .transition()
+          .duration(500)
           .text(function (d) {
             let percent =
               (parseInt(d.data[1]) /
@@ -767,7 +779,6 @@
             var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
             return midangle < Math.PI ? "start" : "end";
           })
-          .style("font-size", 10)
           .attr("class", "pieLabel");
 
         // pie
@@ -790,18 +801,17 @@
 
         pie
           .select("text")
-          .text("Education Level Breakdown of " + name + " County")
-          .attr("visibility", "");
+          .text("Education Level Breakdown of " + name + " County");
       }
       // updatePie();
 
       // pie legend
 
-      let pielegend = d3
-        .select("#pielegend")
+      let pielegend = d3.select("#pielegend");
       console.log(pieColorScale("P_some_college"));
       // Add one dot in the legend for each name.
-      pielegend.selectAll("mydots")
+      pielegend
+        .selectAll("mydots")
         .data(Object.keys(pieDomainDict))
         .enter()
         // .append("circle")
@@ -810,33 +820,45 @@
         // .attr("cy", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
         // .attr("r", 2)
         .attr("x", 10)
-        .attr("y", function (d, i) { return 35 + i * 20 })
-        .attr('width', "10px")
-        .attr('height', 10)
-        .style("fill", function (d) { return pieColorScale(d) })
+        .attr("y", function (d, i) {
+          return 5 + i * 20;
+        })
+        .attr("width", "10px")
+        .attr("height", 10)
+        .style("fill", function (d) {
+          return pieColorScale(d);
+        });
 
       // Add one dot in the legend for each name.
-      pielegend.selectAll("mylabels")
+      pielegend
+        .selectAll("mylabels")
         .data(Object.keys(pieDomainDict))
         .enter()
         .append("text")
         .attr("x", 25)
-        .attr("y", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
-        .style("fill", function (d) { return pieColorScale(d) })
-        .text(function (d) { return pieDomainDict[d] })
+        .attr("y", function (d, i) {
+          return 10 + i * 20;
+        }) // 100 is where the first dot appears. 25 is the distance between dots
+        .style("fill", function (d) {
+          return pieColorScale(d);
+        })
+        .text(function (d) {
+          return pieDomainDict[d];
+        })
         .attr("text-anchor", "left")
         .style("font-size", 14)
-        .style("alignment-baseline", "middle")
+        .style("alignment-baseline", "middle");
 
       // Unemployment Line Chart =============================================
       const unemploymentData = await unemploymentPreprocess();
-      let linechartTitle = d3.select("#linechartTitle")
-        .attr("font-size", 20)
+      let linechartTitle = d3.select("#linechartTitle").attr("font-size", 20);
       // console.log("here", typeof (side.style("width")), side.style("width"));
-      let divWidth = Number(d3.select("#sidebar").style("width").replace("px", ""));
       let linechartSvg = d3.select("#linechart");
-      linechartSvg
-        .attr("width", divWidth - 20);
+
+      let divWidth = Number(
+        d3.select("#sidebar").style("width").replace("px", "")
+      );
+      linechartSvg.attr("width", divWidth - 20);
 
       console.log(linechartSvg.attr("width"));
       const linechartMargin = { top: 30, right: 10, bottom: 50, left: 70 };
@@ -848,9 +870,7 @@
         linechartSvg.attr("height") -
         linechartMargin.top -
         linechartMargin.bottom;
-      console.log(
-        linechartMargin.left -
-        linechartMargin.right);
+      console.log(linechartMargin.left - linechartMargin.right);
 
       let linechartAnnotations = linechartSvg
         .append("g")
@@ -936,9 +956,11 @@
         // .attr("text-anchor", "middle")
         .attr(
           "transform",
-          `translate(${12},${linechartHeight / 2 + linechartMargin.bottom + 20}) rotate(-90)`
+          `translate(${12},${linechartHeight / 2 + linechartMargin.bottom + 20
+          }) rotate(-90)`
         );
-      linechartAnnotations.append("text")
+      linechartAnnotations
+        .append("text")
         .text("Unemployment Rate from 1990 to 2016")
         .attr("class", "chart-title")
         // .attr("text-anchor", "start")
@@ -978,7 +1000,7 @@
         .attr("x", -tooltipLineWidth / 2.0)
         .attr("y", 0)
         .attr("width", tooltipLineWidth)
-        .attr("height", tooltipLineHeight)
+        .attr("height", tooltipLineHeight);
       let linechartLabelText = tooltipLine
         .append("text")
         .attr("text-anchor", "middle")
@@ -1083,7 +1105,10 @@
           if (yPos < 50) {
             yOffset = 10;
           }
-          tooltipLine.attr("transform", `translate(${xPos + xOffset},${yPos + yOffset})`);
+          tooltipLine.attr(
+            "transform",
+            `translate(${xPos + xOffset},${yPos + yOffset})`
+          );
         });
       }
     };
