@@ -703,7 +703,7 @@
           const u = pie.selectAll("path").data(dataReady);
           u.join("path")
             .transition()
-            .duration(1000)
+            .duration(750)
             .attr("d", arcGenerator)
             .attr("fill", function (d) {
               console.log(d);
@@ -721,6 +721,8 @@
             .data(dataReady)
             .enter()
             .append("polyline")
+            .transition()
+            .duration(500)
             .attr("stroke", "black")
             .attr("class", "pieLabel")
             .style("fill", "none")
@@ -740,6 +742,9 @@
             .data(dataReady)
             .enter()
             .append("text")
+            .style("font-size", 10)
+            .transition()
+            .duration(500)
             .text(function (d) {
               let percent =
                 (parseInt(d.data[1]) /
@@ -757,8 +762,8 @@
               var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
               return midangle < Math.PI ? "start" : "end";
             })
-            .style("font-size", 10)
             .attr("class", "pieLabel");
+            
 
           // pie
           //   .selectAll("mySlices")
