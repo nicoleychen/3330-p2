@@ -130,7 +130,7 @@
           throughout time.
         </p>
       </div>
-      <p>
+      <p id="clicktostart">
         <strong>CLICK ON A COUNTY TO START</strong>
       </p>
       <div id="visualizations">
@@ -403,6 +403,7 @@
         function onClick() {
           let county = d3.select(this);
           let name = county.datum().properties.name;
+          d3.select("#clicktostart").style("visibility", "hidden");
           updateBar(name);
           updatePie(name);
           updateLineChart(name + " County");
