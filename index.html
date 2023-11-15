@@ -345,7 +345,8 @@
         let tooltip = map
           .append("g")
           .attr("class", "tooltip")
-          .attr("visibility", "hidden");
+          .attr("visibility", "hidden")
+          .style("pointer-events", "none");
         tooltip
           .append("rect")
           .attr("fill", "lightgrey")
