@@ -82,10 +82,12 @@
 
     .chart-title {
       font-size: 15px;
+      text-align: start;
     }
 
     .chartlabel {
-      font-size: 10;
+      font-size: 12;
+      text-align: center;
     }
   </style>
 </head>
@@ -209,7 +211,7 @@
     const svgBar = d3.select("#bar");
     const widthBar = svgBar.attr("width");
     const heightBar = svgBar.attr("height");
-    const marginChart = { top: 10, right: 10, bottom: 50, left: 50 };
+    const marginChart = { top: 30, right: 10, bottom: 50, left: 70 };
     const chartWidth = widthBar - marginChart.left - marginChart.right;
     const chartHeight = heightBar - marginChart.top - marginChart.bottom;
     let annotations = svgBar.append("g").attr("id", "annotations");
@@ -461,12 +463,7 @@
 
       // Bar Chart ===========================================================
 
-      barRace
-        .append("text")
-        .text("Race Breakdown of County")
-        .attr("x", 10)
-        .attr("y", 20)
-        .style("font-size", "15px");
+
       let raceDict = {
         P_asian: "Asian",
         P_black: "Black",
@@ -491,6 +488,27 @@
         .axisLeft(percentScale)
         .tickSize(-chartWidth - 10)
         .tickFormat("");
+      annotations
+        .append("text")
+        .text("Race Breakdown of County")
+        .attr("class", "chart-title")
+        .attr("x", marginChart.left)
+        .attr("y", marginChart.top - 10);
+      annotations
+        .append("text")
+        .text("Race")
+        .attr("class", "chartlabel")
+        .attr("x", chartWidth / 2 + marginChart.left)
+        .attr("y", chartHeight + marginChart.top + 45);
+      annotations
+        .append("text")
+        .text("Percentage")
+        .attr("class", "chartlabel")
+        .attr(
+          "transform",
+          `translate(${12},${chartHeight / 2 + marginChart.bottom + 20}) rotate(-90)`
+        );
+
 
       annotations
         .append("g")
@@ -899,22 +917,23 @@
       linechartAnnotations
         .append("text")
         .text("Date")
-        .attr("text-anchor", "middle")
+        .attr("class", "chartlabel")
+        // .attr("text-anchor", "middle")
         .attr("x", linechartWidth / 2 + linechartMargin.left)
         .attr("y", linechartHeight + linechartMargin.top + 45);
       linechartAnnotations
         .append("text")
         .text("Unemployment Rate")
         .attr("class", "chartlabel")
-        .attr("text-anchor", "middle")
+        // .attr("text-anchor", "middle")
         .attr(
           "transform",
-          `translate(${12},${linechartHeight / 2}) rotate(-90)`
+          `translate(${12},${linechartHeight / 2 + linechartMargin.bottom + 20}) rotate(-90)`
         );
       linechartAnnotations.append("text")
         .text("Unemployment Rate from 1990 to 2016")
         .attr("class", "chart-title")
-        .attr("text-anchor", "start")
+        // .attr("text-anchor", "start")
         .attr("x", linechartMargin.left)
         .attr("y", linechartMargin.top - 10);
 
