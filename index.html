@@ -1,1228 +1,1241 @@
 <html>
-
-<head>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://d3js.org/topojson.v3.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-  <style>
-    body {
-      font-family: "Open Sans", sans-serif;
-      font-weight: 500;
-    }
-
-    #textbox {
-      /* background-color: gray; */
-      /* width: 100%; */
-      height: 120px;
-      padding: 9px 15px;
-      box-sizing: border-box;
-      border: 2px solid #ccc;
-      border-radius: 6px;
-      background-color: #f8f8f8;
-      font-size: 16px;
-      resize: none;
-      /* visibility:hidden; */
-    }
-
-    .container {
-      width: 100%;
-      padding: 1rem;
-      display: flex;
-      flex-direction: column;
-    }
-
-    #title {
-      width: 100%;
-      /* text-align: center; */
-      font-size: x-large;
-      padding: 5;
-    }
-
-    #description {
-      width: 100%;
-      margin: 5;
-    }
-
-    #visualizations {
-      display: flex;
-      flex-direction: row;
-    }
-
-    #map-container {
-      display: flex;
-      flex-direction: column;
-    }
-
-    #sidebar {
-      display: flex;
-      flex-direction: column;
-    }
-
-    #text-pie {
-      display: flex;
-      flex-direction: row;
-    }
-
-    #text-legend {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .outline {
-      fill: none;
-      stroke: white;
-      stroke-width: 1px;
-    }
-
-    .gridlines line {
-      stroke: lightgray;
-      stroke-width: 1px;
-    }
-
-    .gridlines .domain {
-      stroke: none;
-    }
-
-    .chart-title {
-      font-size: 15px;
-      text-align: start;
-    }
-
-    .chartlabel {
-      font-size: 12;
-      text-align: center;
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <div id="title">
-      <strong>A Deeper Look at Internet Access across the Tristate Region</strong>
-    </div>
-    <p id="description">
-      This visualization was designed to examine the internet access across the Tristate region, and invites users to
-      discover possible correlations behind the statistics. Some initial observations the user might make are how
-      counties with higher percentages of no internet access also have lower median household incomes. For a deeper
-      look, users may select a specific county to view a breakdown of the demographics, economic profiles of households,
-      and education level. In addition, users can further examine the unemployment changes throughout time.
-    </p>
-    <p>
-      <strong>CLICK ON A COUNTY TO START</strong>
-    </p>
-    <div id="visualizations">
-      <div id="map-container">
-        <svg id="map" height="750" width="700"></svg>
-        <svg id="legend" height="50" width="320"></svg>
-      </div>
-      <div id="sidebar">
-        <div id="text-pie">
-          <div id="text-legend">
-            <svg id="textbox" height="200" width="230"></svg>
-            <svg id="pielegend"></svg>
-          </div>
-          <svg id="pie" height="300" width="300"></svg></svg>
-        </div>
-        <svg id="linechart" height="300" width="500"> </svg>
-        <svg id="bar" height="400" width="400"></svg>
-      </div>
-    </div>
-  </div>
-  <script>
-    // Preprocess county unemployment dataset
-    const unemploymentPreprocess = async function () {
-      const unemployment = await d3.json("unemployment.json");
-      // console.log(unemployment);
-
-      const nyCounties = [
-        "Orange",
-        "Dutchess",
-        "Ulster",
-        "Nassau",
-        "Suffolk",
-        "Sullivan",
-        "Rockland",
-        "Putnam",
-        "Westchester",
-        "Richmond",
-        "Bronx",
-        "New York",
-        "Queens",
-        "Kings",
-      ];
-      const njCounties = [
-        "Bergen",
-        "Middlesex",
-        "Monmouth",
-        "Ocean",
-        "Somerset",
-        "Essex",
-        "Union",
-        "Morris",
-        "Sussex",
-        "Hunterdon",
-        "Mercer",
-        "Passaic",
-        "Hudson",
-      ];
-      const ctCounties = ["Fairfield", "New Haven", "Litchfield"];
-
-      const unemploymentData = {};
-      for (let county of [...nyCounties, ...njCounties, ...ctCounties]) {
-        unemploymentData[county + " County"] = [];
+  <head>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://d3js.org/topojson.v3.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family: "Open Sans", sans-serif;
+        font-weight: 500;
       }
 
-      for (let [year, months] of Object.entries(unemployment)) {
-        for (let [month, states] of Object.entries(months)) {
-          if (month !== "Annual") {
-            const updateState = (state, counties) => {
-              for (let county of counties) {
-                unemploymentData[county + " County"].push({
-                  date: new Date(Date.parse(`${month} ${year}`)),
-                  unemploymentRate:
-                    states[state]["Unemployment Rate"][county + " County"] /
-                    100,
-                });
-              }
-            };
+      #textbox {
+        /* background-color: gray; */
+        /* width: 100%; */
+        height: 120px;
+        padding: 9px 15px;
+        box-sizing: border-box;
+        border: 2px solid #ccc;
+        border-radius: 6px;
+        background-color: #f8f8f8;
+        font-size: 16px;
+        resize: none;
+        /* visibility:hidden; */
+      }
 
-            updateState("New York", nyCounties);
-            updateState("New Jersey", njCounties);
-            updateState("Connecticut", ctCounties);
+      .container {
+        width: 100%;
+        padding: 1rem;
+        display: flex;
+        flex-direction: column;
+      }
+
+      #title {
+        width: 100%;
+        /* text-align: center; */
+        font-size: x-large;
+        padding: 5;
+      }
+
+      #description {
+        width: 100%;
+        margin: 5;
+      }
+
+      #visualizations {
+        display: flex;
+        flex-direction: row;
+      }
+
+      #map-container {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #sidebar {
+        display: flex;
+        flex-direction: column;
+      }
+
+      #text-pie {
+        display: flex;
+        flex-direction: row;
+      }
+
+      #text-legend {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .outline {
+        fill: none;
+        stroke: white;
+        stroke-width: 1px;
+      }
+
+      .gridlines line {
+        stroke: lightgray;
+        stroke-width: 1px;
+      }
+
+      .gridlines .domain {
+        stroke: none;
+      }
+
+      .chart-title {
+        font-size: 15px;
+        text-align: start;
+      }
+
+      .chartlabel {
+        font-size: 12;
+        text-align: center;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <div id="title">
+        <strong
+          >A Deeper Look at Internet Access across the Tristate Region</strong
+        >
+      </div>
+      <p id="description">
+        This visualization was designed to examine the internet access across
+        the Tristate region, and invites users to discover possible correlations
+        behind the statistics. Some initial observations the user might make are
+        how counties with higher percentages of no internet access also have
+        lower median household incomes. For a deeper look, users may select a
+        specific county to view a breakdown of the demographics, economic
+        profiles of households, and education level. In addition, users can
+        further examine the unemployment changes throughout time.
+      </p>
+      <p>
+        <strong>CLICK ON A COUNTY TO START</strong>
+      </p>
+      <div id="visualizations">
+        <div id="map-container">
+          <svg id="map" height="750" width="700"></svg>
+          <svg id="legend" height="50" width="320"></svg>
+        </div>
+        <div id="sidebar">
+          <div id="text-pie">
+            <div id="text-legend">
+              <svg id="textbox" height="200" width="230"></svg>
+              <svg id="pie"></svg>
+              <svg id="pielegend" height="150" width="200"></svg>
+            </div>
+            <div id="bar-div">
+              <svg id="bar" height="500" width="450"></svg>
+            </div>
+          </div>
+          <svg id="linechart" height="300" width="500"></svg>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Preprocess county unemployment dataset
+      const unemploymentPreprocess = async function () {
+        const unemployment = await d3.json("unemployment.json");
+        // console.log(unemployment);
+
+        const nyCounties = [
+          "Orange",
+          "Dutchess",
+          "Ulster",
+          "Nassau",
+          "Suffolk",
+          "Sullivan",
+          "Rockland",
+          "Putnam",
+          "Westchester",
+          "Richmond",
+          "Bronx",
+          "New York",
+          "Queens",
+          "Kings",
+        ];
+        const njCounties = [
+          "Bergen",
+          "Middlesex",
+          "Monmouth",
+          "Ocean",
+          "Somerset",
+          "Essex",
+          "Union",
+          "Morris",
+          "Sussex",
+          "Hunterdon",
+          "Mercer",
+          "Passaic",
+          "Hudson",
+        ];
+        const ctCounties = ["Fairfield", "New Haven", "Litchfield"];
+
+        const unemploymentData = {};
+        for (let county of [...nyCounties, ...njCounties, ...ctCounties]) {
+          unemploymentData[county + " County"] = [];
+        }
+
+        for (let [year, months] of Object.entries(unemployment)) {
+          for (let [month, states] of Object.entries(months)) {
+            if (month !== "Annual") {
+              const updateState = (state, counties) => {
+                for (let county of counties) {
+                  unemploymentData[county + " County"].push({
+                    date: new Date(Date.parse(`${month} ${year}`)),
+                    unemploymentRate:
+                      states[state]["Unemployment Rate"][county + " County"] /
+                      100,
+                  });
+                }
+              };
+
+              updateState("New York", nyCounties);
+              updateState("New Jersey", njCounties);
+              updateState("Connecticut", ctCounties);
+            }
           }
         }
-      }
 
-      for (let county of Object.keys(unemploymentData)) {
-        unemploymentData[county].sort((x, y) => d3.ascending(x.date, y.date));
-      }
+        for (let county of Object.keys(unemploymentData)) {
+          unemploymentData[county].sort((x, y) => d3.ascending(x.date, y.date));
+        }
 
-      // console.log(unemploymentData);
-      return unemploymentData;
-    };
-
-    // svg for map
-    const svgMap = d3.select("#map");
-    const marginMap = { top: 20, right: 20, bottom: 20, left: 20 };
-    const widthMap = svgMap.attr("width");
-    const heightMap = svgMap.attr("height");
-    const mapWidth = widthMap - marginMap.left - marginMap.right;
-    const mapHeight = heightMap - marginMap.top - marginMap.bottom;
-    const map = svgMap
-      .append("g")
-      .attr(
-        "transform",
-        "translate(" + marginMap.left + "," + marginMap.top + ")"
-      );
-
-    const requestData = async function () {
-      // Internet Map ========================================================
-      const internet = await d3.csv("kaggle_internet.csv");
-      const tristate = await d3.json("countiesTriState.json");
-      let arc = [[-3733, 6351]];
-      tristate.objects.counties.geometries[4].arcs = arc;
-      var counties = topojson.feature(tristate, tristate.objects.counties); // List of state outlines to fill
-      var countiesMesh = topojson.mesh(tristate, tristate.objects.counties); // 'Mesh' of all outlines put together for a stroke
-      var projection = d3
-        .geoMercator()
-        .fitSize([mapWidth, mapHeight], counties);
-      var path = d3.geoPath().projection(projection);
-
-      // Draw counties and outlines (see CSS at the top)
-      let countyPaths = map
-        .selectAll("path.county")
-        .data(counties.features)
-        .join("path")
-        .attr("class", "county")
-        .attr("d", path)
-        .on("mouseover", mouseEntersState)
-        .on("mouseout", mouseLeavesState)
-        .on("click", onClick);
-
-      map
-        .append("path")
-        .datum(countiesMesh)
-        .attr("class", "outline")
-        .attr("stroke", "white")
-        .attr("d", path);
-
-      let stateNames = ["NY", "CT", "NJ"];
-      let countyNames = [
-        "Orange",
-        "Dutchess",
-        "Ulster",
-        "Nassau",
-        "Sullivan",
-        "Rockland",
-        "Putnam",
-        "Passaic",
-        "Hudson",
-        "Bergen",
-        "Westchester",
-        "Richmond",
-        "Bronx",
-        "New York",
-        "Queens",
-        "Kings",
-        "Middlesex",
-        "Monmouth",
-        "Ocean",
-        "Somerset",
-        "Essex",
-        "Union",
-        "Morris",
-        "Sussex",
-        "Hunterdon",
-        "Mercer",
-        "Fairfield",
-        "New Haven",
-        "Litchfield",
-        "Suffolk",
-      ];
-      let tristate_internet = internet.filter(
-        (d) =>
-          countyNames.includes(d["county"].replace(" County", "")) &&
-          stateNames.includes(d["state"])
-      );
-
-      var countyDict = {};
-      tristate_internet.forEach((d) => {
-        let county = d.county;
-        countyDict[county] = d;
-      });
-
-      const minMax = d3.extent(tristate_internet, (d) =>
-        Number(d.percent_no_internet)
-      );
-      const colorScale = d3
-        .scaleSequential()
-        .interpolator(d3.interpolateYlGnBu)
-        .domain(minMax);
-
-      map
-        .selectAll(".county")
-        .style("fill", (d) =>
-          colorScale(
-            countyDict[d.properties.name + " County"].percent_no_internet
-          )
-        );
-
-      let momesh = map
-        .append("path")
-        .attr("class", "mouseover outline")
-        .style("stroke", "black")
-        .style("stroke-width", 3)
-        .attr("d", "");
-
-      let tooltipWidth = 140;
-      let tooltipHeight = 40;
-      var format = d3.format(".2f");
-      let tooltip = map
-        .append("g")
-        .attr("class", "tooltip")
-        .attr("visibility", "hidden");
-      tooltip
-        .append("rect")
-        .attr("fill", "lightgrey")
-        .attr("opacity", 0.9)
-        .attr("x", -tooltipWidth / 2.0)
-        .attr("y", 0)
-        .attr("width", tooltipWidth)
-        .attr("height", tooltipHeight);
-      let name_text = tooltip
-        .append("text")
-        .attr("fill", "black")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "hanging")
-        .style("font-size", 14)
-        .attr("x", 0)
-        .attr("y", 2);
-      let percentage_text = tooltip
-        .append("text")
-        .attr("fill", "black")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "hanging")
-        .attr("x", 0)
-        .style("font-size", 13)
-        .attr("y", 22);
-
-      // console.log(tristate.objects.counties);
-      function mouseEntersState() {
-        tooltip.style("visibility", "visible"); // Make tooltip visible
-        let county = d3.select(this);
-        let name = county.datum().properties.name;
-        let countyData = countyDict[name + " County"];
-
-        var mo = topojson.mesh(
-          tristate,
-          tristate.objects.counties,
-          function (a, b) {
-            return a.properties.name === name || b.properties.name === name;
-          }
-        );
-        momesh.datum(mo).attr("d", path);
-
-        percentage_text.text(format(countyData.percent_no_internet) + "%");
-        name_text.text(name + " County");
-
-        let bounds = path.bounds(county.datum());
-        let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
-        let yPos = bounds[1][1] - 15;
-        tooltip.attr("transform", `translate(${xPos},${yPos})`);
-      }
-
-      function mouseLeavesState() {
-        tooltip.style("visibility", "hidden");
-        momesh.attr("d", "");
-      }
-      function onClick() {
-        let county = d3.select(this);
-        let name = county.datum().properties.name;
-        updateBar(name);
-        updatePie(name);
-        updateLineChart(name + " County");
-        updateTextBox(name);
-      }
-
-      Legend(colorScale, {
-        title: "Percentage of population with no internet",
-        tickFormat: (d) => d + "%",
-      });
-
-      // Info Box ===========================================================
-      let textWidth = 230;
-      let textHeight = 180;
-      let infobox = d3.select("#textbox");
-      // .attr("width", textWidth )
-      // .attr("height", textHeight);
-      // .append("g");
-      box = infobox.append("g");
-      let boxCountyName = box
-        .append("text")
-        .attr("text-anchor", "start")
-        .text("Select a County")
-        .attr("x", 0)
-        .attr("y", 15)
-        .style("font-size", 16)
-        .style("font-weight", 600);
-      let boxTotalPop = box
-        .append("text")
-        .text("Total Population:")
-        .attr("x", 0)
-        .attr("y", 33)
-        .style("font-size", 11);
-      let boxInternet = box
-        .append("text")
-        .text("Percent with No Internet: ")
-        .attr("x", 0)
-        .attr("y", 48)
-        .style("font-size", 11);
-      let boxMedianIncome = box
-        .append("text")
-        .text("Median Household Income:")
-        .attr("x", 0)
-        .attr("y", 63)
-        .style("font-size", 11);
-      let boxMedianAge = box
-        .append("text")
-        .text("Median Age:")
-        .attr("x", 0)
-        .attr("y", 78)
-        .style("font-size", 11);
-      let boxPoverty = box
-        .append("text")
-        .text("Percentage Below Poverty Line:")
-        .attr("x", 0)
-        .attr("y", 93)
-        .style("font-size", 11);
-
-      function updateTextBox(name) {
-        // infobox.attr("visibility", "visible");
-        data = countyDict[name + " County"];
-        console.log(data);
-        // box.selectAll("text")
-        //   .remove();
-        boxTotalPop.text(
-          "Total Population: " + d3.format(",r")(data.P_total)
-        );
-        boxInternet.text(
-          "Percent with No Internet: " +
-          d3.format(".2%")(Number(data.percent_no_internet) / 100)
-        );
-        boxCountyName.text(data.county + ", " + data.state);
-        boxMedianIncome.text(
-          "Median Household Income: " +
-          d3.format("($,.0f")(data.median_household_income)
-        );
-        boxMedianAge.text("Median Age: " + data.median_age);
-        let poverty = d3.format(".2%")(
-          Number(data.P_below_poverty) / Number(data.P_total)
-        );
-        boxPoverty.text("Percentage Below Poverty: " + poverty);
-      }
-
-      // Bar Chart ===========================================================
-      const svgBar = d3.select("#bar");
-      const widthBar = svgBar.attr("width");
-      const heightBar = svgBar.attr("height");
-      const marginChart = { top: 30, right: 10, bottom: 50, left: 70 };
-      const chartWidth = widthBar - marginChart.left - marginChart.right;
-      const chartHeight = heightBar - marginChart.top - marginChart.bottom;
-      let annotations = svgBar.append("g").attr("id", "annotations");
-      let barRace = svgBar
-        .append("g")
-        .attr("id", "points")
-        .attr(
-          "transform",
-          "translate(" + marginChart.left + "," + marginChart.top + ")"
-        );
-      svgBar.attr(
-        "width",
-        Number(d3.select("#bar-div").style("width").replace("px", "")) - 20
-      );
-
-      let raceDict = {
-        P_asian: "Asian",
-        P_black: "Black",
-        P_hawaiian: "Hawaiian",
-        P_native: "Native",
-        P_white: "White",
-        P_others: "Other",
+        // console.log(unemploymentData);
+        return unemploymentData;
       };
-      const percentScale = d3
-        .scaleLinear()
-        .domain([0, 1])
-        .range([chartHeight, 0]);
-      race = ["White", "Black", "Asian", "Hawaiian", "Native", "Other"];
-      const raceScale = d3
-        .scaleBand()
-        .domain(race)
-        .range([0, chartWidth])
-        .padding(0.05);
 
-      let leftAxis = d3.axisLeft(percentScale).tickFormat(d3.format(".0%"));
-      let leftGridlines = d3
-        .axisLeft(percentScale)
-        .tickSize(-chartWidth - 10)
-        .tickFormat("");
-      annotations
-        .append("text")
-        .text("Race Breakdown of County")
-        .attr("class", "chart-title")
-        .attr("x", marginChart.left)
-        .attr("y", marginChart.top - 10);
-      annotations
-        .append("text")
-        .text("Race")
-        .attr("class", "chartlabel")
-        .attr("x", chartWidth / 2 + marginChart.left)
-        .attr("y", chartHeight + marginChart.top + 45);
-      annotations
-        .append("text")
-        .text("Percentage")
-        .attr("class", "chartlabel")
+      // svg for map
+      const svgMap = d3.select("#map");
+      const marginMap = { top: 20, right: 20, bottom: 20, left: 20 };
+      const widthMap = svgMap.attr("width");
+      const heightMap = svgMap.attr("height");
+      const mapWidth = widthMap - marginMap.left - marginMap.right;
+      const mapHeight = heightMap - marginMap.top - marginMap.bottom;
+      const map = svgMap
+        .append("g")
         .attr(
           "transform",
-          `translate(${12},${chartHeight / 2 + marginChart.bottom + 20
-          }) rotate(-90)`
+          "translate(" + marginMap.left + "," + marginMap.top + ")"
         );
 
-      annotations
-        .append("g")
-        .attr("class", "y axis")
-        .attr(
-          "transform",
-          `translate(${marginChart.left - 10},${marginChart.top})`
-        )
-        .call(leftAxis);
-      annotations
-        .append("g")
-        .attr("class", "gridlines")
-        .attr(
-          "transform",
-          `translate(${marginChart.left - 10},${marginChart.top})`
-        )
-        .call(leftGridlines);
+      const requestData = async function () {
+        // Internet Map ========================================================
+        const internet = await d3.csv("kaggle_internet.csv");
+        const tristate = await d3.json("countiesTriState.json");
+        let arc = [[-3733, 6351]];
+        tristate.objects.counties.geometries[4].arcs = arc;
+        var counties = topojson.feature(tristate, tristate.objects.counties); // List of state outlines to fill
+        var countiesMesh = topojson.mesh(tristate, tristate.objects.counties); // 'Mesh' of all outlines put together for a stroke
+        var projection = d3
+          .geoMercator()
+          .fitSize([mapWidth, mapHeight], counties);
+        var path = d3.geoPath().projection(projection);
 
-      let bottomAxis = d3.axisBottom(raceScale);
-      annotations
-        .append("g")
-        .attr("class", "x axis")
-        .attr(
-          "transform",
-          `translate(${marginChart.left},${chartHeight + marginChart.top + 10
-          })`
-        )
-        .call(bottomAxis);
+        // Draw counties and outlines (see CSS at the top)
+        let countyPaths = map
+          .selectAll("path.county")
+          .data(counties.features)
+          .join("path")
+          .attr("class", "county")
+          .attr("d", path)
+          .on("mouseover", mouseEntersState)
+          .on("mouseout", mouseLeavesState)
+          .on("click", onClick);
 
-      function updateBar(name) {
-        data = countyDict[name + " County"];
-        raceData = [];
-        Object.keys(raceDict).forEach((d) => {
-          let r = raceDict[d];
-          let value = 0;
-          // console.log(data[d]);
-          if (data[d] != "NA") {
-            value = Number(data[d]) / data["P_total"];
-          }
-          const dataPoint = { race: r, percent: value };
-          raceData.push(dataPoint);
+        map
+          .append("path")
+          .datum(countiesMesh)
+          .attr("class", "outline")
+          .attr("stroke", "white")
+          .attr("d", path);
+
+        let stateNames = ["NY", "CT", "NJ"];
+        let countyNames = [
+          "Orange",
+          "Dutchess",
+          "Ulster",
+          "Nassau",
+          "Sullivan",
+          "Rockland",
+          "Putnam",
+          "Passaic",
+          "Hudson",
+          "Bergen",
+          "Westchester",
+          "Richmond",
+          "Bronx",
+          "New York",
+          "Queens",
+          "Kings",
+          "Middlesex",
+          "Monmouth",
+          "Ocean",
+          "Somerset",
+          "Essex",
+          "Union",
+          "Morris",
+          "Sussex",
+          "Hunterdon",
+          "Mercer",
+          "Fairfield",
+          "New Haven",
+          "Litchfield",
+          "Suffolk",
+        ];
+        let tristate_internet = internet.filter(
+          (d) =>
+            countyNames.includes(d["county"].replace(" County", "")) &&
+            stateNames.includes(d["state"])
+        );
+
+        var countyDict = {};
+        tristate_internet.forEach((d) => {
+          let county = d.county;
+          countyDict[county] = d;
         });
 
-        let barSelection = barRace.selectAll("rect").data(raceData);
+        const minMax = d3.extent(tristate_internet, (d) =>
+          Number(d.percent_no_internet)
+        );
+        const colorScale = d3
+          .scaleSequential()
+          .interpolator(d3.interpolateYlGnBu)
+          .domain(minMax);
 
-        barSelection
-          .enter()
+        map
+          .selectAll(".county")
+          .style("fill", (d) =>
+            colorScale(
+              countyDict[d.properties.name + " County"].percent_no_internet
+            )
+          );
+
+        let momesh = map
+          .append("path")
+          .attr("class", "mouseover outline")
+          .style("stroke", "black")
+          .style("stroke-width", 3)
+          .attr("d", "");
+
+        let tooltipWidth = 140;
+        let tooltipHeight = 40;
+        var format = d3.format(".2f");
+        let tooltip = map
+          .append("g")
+          .attr("class", "tooltip")
+          .attr("visibility", "hidden");
+        tooltip
           .append("rect")
-          .merge(barSelection)
-          .transition()
-          .duration(1000)
-          .attr("x", (d) => raceScale(d.race))
-          .attr("y", (d) => percentScale(d.percent))
-          .attr("height", (d) => percentScale(0) - percentScale(d.percent))
-          .attr("width", raceScale.bandwidth())
-          .attr("fill", colorScale(10.111));
-
-        let textSelection = barRace.selectAll("#barlabel").data(raceData);
-
-        textSelection
-          .enter()
+          .attr("fill", "lightgrey")
+          .attr("opacity", 0.9)
+          .attr("x", -tooltipWidth / 2.0)
+          .attr("y", 0)
+          .attr("width", tooltipWidth)
+          .attr("height", tooltipHeight);
+        let name_text = tooltip
           .append("text")
-          .attr("id", "barlabel")
-          .style("font-size", 9)
-          .style("font-family", "sans-serif")
+          .attr("fill", "black")
           .attr("text-anchor", "middle")
-          .merge(textSelection)
-          .transition()
-          .duration(1000)
-          .text((d) => d3.format(".1%")(d.percent))
-          .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
-          .attr("y", (d) => percentScale(d.percent) - 3);
+          .attr("alignment-baseline", "hanging")
+          .style("font-size", 14)
+          .attr("x", 0)
+          .attr("y", 2);
+        let percentage_text = tooltip
+          .append("text")
+          .attr("fill", "black")
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "hanging")
+          .attr("x", 0)
+          .style("font-size", 13)
+          .attr("y", 22);
 
-        // barRace
-        //   .selectAll("rect.bar")
-        //   .data(raceData)
-        //   .join("rect")
-        //   .attr("class", "bar")
-        //   .attr("fill", colorScale(10.111))
-        //   .attr("x", (d) => raceScale(d.race))
-        //   .attr("y", (d) => percentScale(d.percent))
-        //   .attr("height", (d) => percentScale(0) - percentScale(d.percent))
-        //   .attr("width", raceScale.bandwidth());
+        // console.log(tristate.objects.counties);
+        function mouseEntersState() {
+          tooltip.style("visibility", "visible"); // Make tooltip visible
+          let county = d3.select(this);
+          let name = county.datum().properties.name;
+          let countyData = countyDict[name + " County"];
 
-        // barRace
-        //   .selectAll("text")
-        //   .data(raceData)
-        //   .join("text")
-        //   .text((d) => d3.format(".1%")(d.percent))
-        //   .style("font-size", 9)
-        //   .style("font-family", "sans-serif")
-        //   .attr("text-anchor", "middle")
-        //   .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
-        //   .attr("y", (d) => percentScale(d.percent) - 3);
-      }
+          var mo = topojson.mesh(
+            tristate,
+            tristate.objects.counties,
+            function (a, b) {
+              return a.properties.name === name || b.properties.name === name;
+            }
+          );
+          momesh.datum(mo).attr("d", path);
 
-      // Pie Chart ===========================================================
-      let pieHeight = 250;
-      let pieWidth = 250;
-      let pieMargin = 40;
+          percentage_text.text(format(countyData.percent_no_internet) + "%");
+          name_text.text(name + " County");
 
-      let pie = d3
-        .select("#pie")
-        .attr("width", pieWidth)
-        .attr("height", pieHeight)
-        .append("g")
-        .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
+          let bounds = path.bounds(county.datum());
+          let xPos = (bounds[0][0] + bounds[1][0]) / 2.0;
+          let yPos = bounds[1][1] - 15;
+          tooltip.attr("transform", `translate(${xPos},${yPos})`);
+        }
 
-      pie
-        .append("text")
-        .attr("text-anchor", "middle")
-        .attr("font-size", 10)
-        .attr("x", 0)
-        .attr("y", -100);
-      let pieDomain = [
-        "P_some_high_school",
-        "P_high_school_equivalent",
-        "P_other",
-        "P_below_middle_school",
-        "P_some_college",
-        "P_bachelor_and_above",
-      ];
-      let pieDomainDict = {
-        P_below_middle_school: "below middle school",
-        P_some_high_school: "some high school",
-        P_high_school_equivalent: "high school equivalent",
-        P_some_college: "some college",
-        P_bachelor_and_above: "bachelor and above",
-        P_other: "unknown",
-      };
+        function mouseLeavesState() {
+          tooltip.style("visibility", "hidden");
+          momesh.attr("d", "");
+        }
+        function onClick() {
+          let county = d3.select(this);
+          let name = county.datum().properties.name;
+          updateBar(name);
+          updatePie(name);
+          updateLineChart(name + " County");
+          updateTextBox(name);
+        }
 
-      let tristate_school = {};
-      countyNames.forEach((county) => {
-        county = county + " County";
-        tristate_school[county] = {
-          P_some_high_school: countyDict[county].P_some_high_school,
-          P_high_school_equivalent:
-            countyDict[county].P_high_school_equivalent,
-          P_some_college: countyDict[county].P_some_college,
-          P_bachelor_and_above: countyDict[county].P_bachelor_and_above,
-          P_other: (
-            countyDict[county].P_total -
-            countyDict[county].P_below_middle_school -
-            countyDict[county].P_some_high_school -
-            countyDict[county].P_high_school_equivalent -
-            countyDict[county].P_some_college -
-            countyDict[county].P_bachelor_and_above
-          ).toString(),
-          P_below_middle_school: countyDict[county].P_below_middle_school,
-        };
-      });
+        Legend(colorScale, {
+          title: "Percentage of population with no internet",
+          tickFormat: (d) => d + "%",
+        });
 
-      let pieColorScale = d3
-        .scaleOrdinal()
-        .domain(pieDomain)
-        .range(d3.schemeSet2);
+        // Info Box ===========================================================
+        let textWidth = 230;
+        let textHeight = 180;
+        let infobox = d3.select("#textbox");
+        // .attr("width", textWidth )
+        // .attr("height", textHeight);
+        // .append("g");
+        box = infobox.append("g");
+        let boxCountyName = box
+          .append("text")
+          .attr("text-anchor", "start")
+          .text("Select a County")
+          .attr("x", 0)
+          .attr("y", 15)
+          .style("font-size", 16)
+          .style("font-weight", 600);
+        let boxTotalPop = box
+          .append("text")
+          .text("Total Population:")
+          .attr("x", 0)
+          .attr("y", 33)
+          .style("font-size", 11);
+        let boxInternet = box
+          .append("text")
+          .text("Percent with No Internet: ")
+          .attr("x", 0)
+          .attr("y", 48)
+          .style("font-size", 11);
+        let boxMedianIncome = box
+          .append("text")
+          .text("Median Household Income:")
+          .attr("x", 0)
+          .attr("y", 63)
+          .style("font-size", 11);
+        let boxMedianAge = box
+          .append("text")
+          .text("Median Age:")
+          .attr("x", 0)
+          .attr("y", 78)
+          .style("font-size", 11);
+        let boxPoverty = box
+          .append("text")
+          .text("Percentage Below Poverty Line:")
+          .attr("x", 0)
+          .attr("y", 93)
+          .style("font-size", 11);
 
-      function updatePie(name) {
-        // let selected = d3.select(this);
-        // var name;
-        // try {
-        //   name = selected.datum().properties.name + " County";
-        // } catch (TypeError) {
-        //   name = "New York County";
-        // }
-        let d3pie = d3
-          .pie()
-          .value((d) => {
-            return d[1];
-          })
-          .sort(null);
-        // .sort(function (a, b) {
-        //   // return d3.ascending(a.key, b.key);
-        //   return d3.permute(pieDomain, [0, 2, 1, 3, 5, 4]);
-        // });
+        function updateTextBox(name) {
+          // infobox.attr("visibility", "visible");
+          data = countyDict[name + " County"];
+          console.log(data);
+          // box.selectAll("text")
+          //   .remove();
+          boxTotalPop.text(
+            "Total Population: " + d3.format(",r")(data.P_total)
+          );
+          boxInternet.text(
+            "Percent with No Internet: " +
+              d3.format(".2%")(Number(data.percent_no_internet) / 100)
+          );
+          boxCountyName.text(data.county + ", " + data.state);
+          boxMedianIncome.text(
+            "Median Household Income: " +
+              d3.format("($,.0f")(data.median_household_income)
+          );
+          boxMedianAge.text("Median Age: " + data.median_age);
+          let poverty = d3.format(".2%")(
+            Number(data.P_below_poverty) / Number(data.P_total)
+          );
+          boxPoverty.text("Percentage Below Poverty: " + poverty);
+        }
 
-        // console.log(tristate_school[name + " County"]);
-        let dataReady = d3pie(
-          Object.entries(tristate_school[name + " County"])
+        // Bar Chart ===========================================================
+        const svgBar = d3.select("#bar");
+        const widthBar = svgBar.attr("width");
+        const heightBar = svgBar.attr("height");
+        const marginChart = { top: 30, right: 10, bottom: 50, left: 70 };
+        const chartWidth = widthBar - marginChart.left - marginChart.right;
+        const chartHeight = heightBar - marginChart.top - marginChart.bottom;
+        let annotations = svgBar.append("g").attr("id", "annotations");
+        let barRace = svgBar
+          .append("g")
+          .attr("id", "points")
+          .attr(
+            "transform",
+            "translate(" + marginChart.left + "," + marginChart.top + ")"
+          );
+        svgBar.attr(
+          "width",
+          Number(d3.select("#bar-div").style("width").replace("px", "")) - 20
         );
 
-        let pieRadius = Math.min(pieHeight, pieWidth) / 2 - pieMargin;
+        let raceDict = {
+          P_asian: "Asian",
+          P_black: "Black",
+          P_hawaiian: "Hawaiian",
+          P_native: "Native",
+          P_white: "White",
+          P_others: "Other",
+        };
+        const percentScale = d3
+          .scaleLinear()
+          .domain([0, 1])
+          .range([chartHeight, 0]);
+        race = ["White", "Black", "Asian", "Hawaiian", "Native", "Other"];
+        const raceScale = d3
+          .scaleBand()
+          .domain(race)
+          .range([0, chartWidth])
+          .padding(0.05);
 
-        const arcGenerator = d3.arc().innerRadius(0).outerRadius(pieRadius);
+        let leftAxis = d3.axisLeft(percentScale).tickFormat(d3.format(".0%"));
+        let leftGridlines = d3
+          .axisLeft(percentScale)
+          .tickSize(-chartWidth - 10)
+          .tickFormat("");
+        annotations
+          .append("text")
+          .text("Race Breakdown of County")
+          .attr("class", "chart-title")
+          .attr("x", marginChart.left)
+          .attr("y", marginChart.top - 10);
+        annotations
+          .append("text")
+          .text("Race")
+          .attr("class", "chartlabel")
+          .attr("x", chartWidth / 2 + marginChart.left)
+          .attr("y", chartHeight + marginChart.top + 45);
+        annotations
+          .append("text")
+          .text("Percentage")
+          .attr("class", "chartlabel")
+          .attr(
+            "transform",
+            `translate(${12},${
+              chartHeight / 2 + marginChart.bottom + 20
+            }) rotate(-90)`
+          );
 
-        var outerArc = d3
-          .arc()
-          .innerRadius(0)
-          .outerRadius(Math.min(pieHeight, pieWidth) / 2 + 25);
-        console.log(pieColorScale("P_some_college"));
+        annotations
+          .append("g")
+          .attr("class", "y axis")
+          .attr(
+            "transform",
+            `translate(${marginChart.left - 10},${marginChart.top})`
+          )
+          .call(leftAxis);
+        annotations
+          .append("g")
+          .attr("class", "gridlines")
+          .attr(
+            "transform",
+            `translate(${marginChart.left - 10},${marginChart.top})`
+          )
+          .call(leftGridlines);
 
-        const u = pie.selectAll("path").data(dataReady);
-        u.join("path")
-          .transition()
-          .duration(750)
-          .attr("d", arcGenerator)
-          .attr("fill", function (d) {
-            console.log(d);
-            return pieColorScale(d.data[0]);
-          })
-          .attr("stroke", "white")
-          .style("stroke-width", "2px")
-          .style("opacity", 1);
+        let bottomAxis = d3.axisBottom(raceScale);
+        annotations
+          .append("g")
+          .attr("class", "x axis")
+          .attr(
+            "transform",
+            `translate(${marginChart.left},${
+              chartHeight + marginChart.top + 10
+            })`
+          )
+          .call(bottomAxis);
 
-        pie.selectAll(".pieLabel").remove();
-
-        // Add the polylines between chart and labels:
-        pie
-          .selectAll("allPolylines")
-          .data(dataReady)
-          .enter()
-          .append("polyline")
-          .transition()
-          .duration(500)
-          .attr("stroke", "black")
-          .attr("class", "pieLabel")
-          .style("fill", "none")
-          .attr("stroke-width", 1)
-          .attr("points", function (d) {
-            var posA = arcGenerator.centroid(d); // line insertion in the slice
-            var posB = outerArc.centroid(d); // line break: we use the other arc generator that has been built only for that
-            var posC = outerArc.centroid(d); // Label position = almost the same as posB
-            var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2; // we need the angle to see if the X position will be at the extreme right or extreme left
-            posC[0] = pieRadius * 0.95 * (midangle < Math.PI ? 1 : -1); // multiply by 1 or -1 to put it on the right or on the left
-            return [posA, posB, posC];
+        function updateBar(name) {
+          data = countyDict[name + " County"];
+          raceData = [];
+          Object.keys(raceDict).forEach((d) => {
+            let r = raceDict[d];
+            let value = 0;
+            // console.log(data[d]);
+            if (data[d] != "NA") {
+              value = Number(data[d]) / data["P_total"];
+            }
+            const dataPoint = { race: r, percent: value };
+            raceData.push(dataPoint);
           });
 
-        // Add the polylines between chart and labels:
+          let barSelection = barRace.selectAll("rect").data(raceData);
+
+          barSelection
+            .enter()
+            .append("rect")
+            .merge(barSelection)
+            .transition()
+            .duration(1000)
+            .attr("x", (d) => raceScale(d.race))
+            .attr("y", (d) => percentScale(d.percent))
+            .attr("height", (d) => percentScale(0) - percentScale(d.percent))
+            .attr("width", raceScale.bandwidth())
+            .attr("fill", colorScale(10.111));
+
+          let textSelection = barRace.selectAll("#barlabel").data(raceData);
+
+          textSelection
+            .enter()
+            .append("text")
+            .attr("id", "barlabel")
+            .style("font-size", 9)
+            .style("font-family", "sans-serif")
+            .attr("text-anchor", "middle")
+            .merge(textSelection)
+            .transition()
+            .duration(1000)
+            .text((d) => d3.format(".1%")(d.percent))
+            .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
+            .attr("y", (d) => percentScale(d.percent) - 3);
+
+          // barRace
+          //   .selectAll("rect.bar")
+          //   .data(raceData)
+          //   .join("rect")
+          //   .attr("class", "bar")
+          //   .attr("fill", colorScale(10.111))
+          //   .attr("x", (d) => raceScale(d.race))
+          //   .attr("y", (d) => percentScale(d.percent))
+          //   .attr("height", (d) => percentScale(0) - percentScale(d.percent))
+          //   .attr("width", raceScale.bandwidth());
+
+          // barRace
+          //   .selectAll("text")
+          //   .data(raceData)
+          //   .join("text")
+          //   .text((d) => d3.format(".1%")(d.percent))
+          //   .style("font-size", 9)
+          //   .style("font-family", "sans-serif")
+          //   .attr("text-anchor", "middle")
+          //   .attr("x", (d) => raceScale(d.race) + raceScale.bandwidth() / 2)
+          //   .attr("y", (d) => percentScale(d.percent) - 3);
+        }
+
+        // Pie Chart ===========================================================
+        let pieHeight = 250;
+        let pieWidth = 250;
+        let pieMargin = 40;
+
+        let pie = d3
+          .select("#pie")
+          .attr("width", pieWidth)
+          .attr("height", pieHeight)
+          .append("g")
+          .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
+
         pie
-          .selectAll("allLabels")
-          .data(dataReady)
+          .append("text")
+          .attr("text-anchor", "middle")
+          .attr("font-size", 10)
+          .attr("x", 0)
+          .attr("y", -100);
+        let pieDomain = [
+          "P_some_high_school",
+          "P_high_school_equivalent",
+          "P_other",
+          "P_below_middle_school",
+          "P_some_college",
+          "P_bachelor_and_above",
+        ];
+        let pieDomainDict = {
+          P_below_middle_school: "below middle school",
+          P_some_high_school: "some high school",
+          P_high_school_equivalent: "high school equivalent",
+          P_some_college: "some college",
+          P_bachelor_and_above: "bachelor and above",
+          P_other: "unknown",
+        };
+
+        let tristate_school = {};
+        countyNames.forEach((county) => {
+          county = county + " County";
+          tristate_school[county] = {
+            P_some_high_school: countyDict[county].P_some_high_school,
+            P_high_school_equivalent:
+              countyDict[county].P_high_school_equivalent,
+            P_some_college: countyDict[county].P_some_college,
+            P_bachelor_and_above: countyDict[county].P_bachelor_and_above,
+            P_other: (
+              countyDict[county].P_total -
+              countyDict[county].P_below_middle_school -
+              countyDict[county].P_some_high_school -
+              countyDict[county].P_high_school_equivalent -
+              countyDict[county].P_some_college -
+              countyDict[county].P_bachelor_and_above
+            ).toString(),
+            P_below_middle_school: countyDict[county].P_below_middle_school,
+          };
+        });
+
+        let pieColorScale = d3
+          .scaleOrdinal()
+          .domain(pieDomain)
+          .range(d3.schemeSet2);
+
+        function updatePie(name) {
+          // let selected = d3.select(this);
+          // var name;
+          // try {
+          //   name = selected.datum().properties.name + " County";
+          // } catch (TypeError) {
+          //   name = "New York County";
+          // }
+          let d3pie = d3
+            .pie()
+            .value((d) => {
+              return d[1];
+            })
+            .sort(null);
+          // .sort(function (a, b) {
+          //   // return d3.ascending(a.key, b.key);
+          //   return d3.permute(pieDomain, [0, 2, 1, 3, 5, 4]);
+          // });
+
+          // console.log(tristate_school[name + " County"]);
+          let dataReady = d3pie(
+            Object.entries(tristate_school[name + " County"])
+          );
+
+          let pieRadius = Math.min(pieHeight, pieWidth) / 2 - pieMargin;
+
+          const arcGenerator = d3.arc().innerRadius(0).outerRadius(pieRadius);
+
+          var outerArc = d3
+            .arc()
+            .innerRadius(0)
+            .outerRadius(Math.min(pieHeight, pieWidth) / 2 + 25);
+          console.log(pieColorScale("P_some_college"));
+
+          const u = pie.selectAll("path").data(dataReady);
+          u.join("path")
+            .transition()
+            .duration(750)
+            .attr("d", arcGenerator)
+            .attr("fill", function (d) {
+              console.log(d);
+              return pieColorScale(d.data[0]);
+            })
+            .attr("stroke", "white")
+            .style("stroke-width", "2px")
+            .style("opacity", 1);
+
+          pie.selectAll(".pieLabel").remove();
+
+          // Add the polylines between chart and labels:
+          pie
+            .selectAll("allPolylines")
+            .data(dataReady)
+            .enter()
+            .append("polyline")
+            .transition()
+            .duration(500)
+            .attr("stroke", "black")
+            .attr("class", "pieLabel")
+            .style("fill", "none")
+            .attr("stroke-width", 1)
+            .attr("points", function (d) {
+              var posA = arcGenerator.centroid(d); // line insertion in the slice
+              var posB = outerArc.centroid(d); // line break: we use the other arc generator that has been built only for that
+              var posC = outerArc.centroid(d); // Label position = almost the same as posB
+              var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2; // we need the angle to see if the X position will be at the extreme right or extreme left
+              posC[0] = pieRadius * 0.95 * (midangle < Math.PI ? 1 : -1); // multiply by 1 or -1 to put it on the right or on the left
+              return [posA, posB, posC];
+            });
+
+          // Add the polylines between chart and labels:
+          pie
+            .selectAll("allLabels")
+            .data(dataReady)
+            .enter()
+            .append("text")
+            .style("font-size", 10)
+            .transition()
+            .duration(500)
+            .text(function (d) {
+              let percent =
+                (parseInt(d.data[1]) /
+                  parseInt(countyDict[name + " County"].P_total)) *
+                100;
+              return percent.toFixed(1) + "%";
+            })
+            .attr("transform", function (d) {
+              var pos = outerArc.centroid(d);
+              var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+              pos[0] = pieRadius * 0.99 * (midangle < Math.PI ? 1 : -1);
+              return "translate(" + pos + ")";
+            })
+            .style("text-anchor", function (d) {
+              var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
+              return midangle < Math.PI ? "start" : "end";
+            })
+            .attr("class", "pieLabel");
+
+          // pie
+          //   .selectAll("mySlices")
+          //   .data(dataReady)
+          //   .join("text")
+          //   .text(function (d) {
+          //     let percent =
+          //       (parseInt(d.data[1]) /
+          //         parseInt(countyDict[name + " County"].P_total)) *
+          //       100;
+          //     return percent > 2.5 ? percent.toFixed(1) + "%" : "";
+          //   })
+          //   .attr("transform", function (d) {
+          //     var c = arcGenerator.centroid(d);
+          //     return "translate(" + c[0] * 1.5 + "," + c[1] * 1.5 + ")";
+          //   })
+          //   .style("text-anchor", "middle")
+          //   .style("font-size", 10);
+
+          pie
+            .select("text")
+            .text("Education Level Breakdown of " + name + " County");
+        }
+        // updatePie();
+
+        // pie legend
+
+        let pielegend = d3.select("#pielegend");
+        console.log(pieColorScale("P_some_college"));
+        // Add one dot in the legend for each name.
+        pielegend
+          .selectAll("mydots")
+          .data(Object.keys(pieDomainDict))
+          .enter()
+          // .append("circle")
+          .append("rect")
+          // .attr("cx", 60)
+          // .attr("cy", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
+          // .attr("r", 2)
+          .attr("x", 10)
+          .attr("y", function (d, i) {
+            return 5 + i * 20;
+          })
+          .attr("width", "10px")
+          .attr("height", 10)
+          .style("fill", function (d) {
+            return pieColorScale(d);
+          });
+
+        // Add one dot in the legend for each name.
+        pielegend
+          .selectAll("mylabels")
+          .data(Object.keys(pieDomainDict))
           .enter()
           .append("text")
-          .style("font-size", 10)
-          .transition()
-          .duration(500)
+          .attr("x", 25)
+          .attr("y", function (d, i) {
+            return 10 + i * 20;
+          }) // 100 is where the first dot appears. 25 is the distance between dots
+          .style("fill", function (d) {
+            return pieColorScale(d);
+          })
           .text(function (d) {
-            let percent =
-              (parseInt(d.data[1]) /
-                parseInt(countyDict[name + " County"].P_total)) *
-              100;
-            return percent.toFixed(1) + "%";
+            return pieDomainDict[d];
           })
-          .attr("transform", function (d) {
-            var pos = outerArc.centroid(d);
-            var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-            pos[0] = pieRadius * 0.99 * (midangle < Math.PI ? 1 : -1);
-            return "translate(" + pos + ")";
-          })
-          .style("text-anchor", function (d) {
-            var midangle = d.startAngle + (d.endAngle - d.startAngle) / 2;
-            return midangle < Math.PI ? "start" : "end";
-          })
-          .attr("class", "pieLabel");
+          .attr("text-anchor", "left")
+          .style("font-size", 14)
+          .style("alignment-baseline", "middle");
 
-        // pie
-        //   .selectAll("mySlices")
-        //   .data(dataReady)
-        //   .join("text")
-        //   .text(function (d) {
-        //     let percent =
-        //       (parseInt(d.data[1]) /
-        //         parseInt(countyDict[name + " County"].P_total)) *
-        //       100;
-        //     return percent > 2.5 ? percent.toFixed(1) + "%" : "";
-        //   })
-        //   .attr("transform", function (d) {
-        //     var c = arcGenerator.centroid(d);
-        //     return "translate(" + c[0] * 1.5 + "," + c[1] * 1.5 + ")";
-        //   })
-        //   .style("text-anchor", "middle")
-        //   .style("font-size", 10);
+        // Unemployment Line Chart =============================================
+        const unemploymentData = await unemploymentPreprocess();
+        let linechartTitle = d3.select("#linechartTitle").attr("font-size", 20);
+        // console.log("here", typeof (side.style("width")), side.style("width"));
+        let linechartSvg = d3.select("#linechart");
 
-        pie
-          .select("text")
-          .text("Education Level Breakdown of " + name + " County");
-      }
-      // updatePie();
-
-      // pie legend
-
-      let pielegend = d3.select("#pielegend");
-      console.log(pieColorScale("P_some_college"));
-      // Add one dot in the legend for each name.
-      pielegend
-        .selectAll("mydots")
-        .data(Object.keys(pieDomainDict))
-        .enter()
-        // .append("circle")
-        .append("rect")
-        // .attr("cx", 60)
-        // .attr("cy", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
-        // .attr("r", 2)
-        .attr("x", 10)
-        .attr("y", function (d, i) {
-          return 5 + i * 20;
-        })
-        .attr("width", "10px")
-        .attr("height", 10)
-        .style("fill", function (d) {
-          return pieColorScale(d);
-        });
-
-      // Add one dot in the legend for each name.
-      pielegend
-        .selectAll("mylabels")
-        .data(Object.keys(pieDomainDict))
-        .enter()
-        .append("text")
-        .attr("x", 25)
-        .attr("y", function (d, i) {
-          return 10 + i * 20;
-        }) // 100 is where the first dot appears. 25 is the distance between dots
-        .style("fill", function (d) {
-          return pieColorScale(d);
-        })
-        .text(function (d) {
-          return pieDomainDict[d];
-        })
-        .attr("text-anchor", "left")
-        .style("font-size", 14)
-        .style("alignment-baseline", "middle");
-
-      // Unemployment Line Chart =============================================
-      const unemploymentData = await unemploymentPreprocess();
-      let linechartTitle = d3.select("#linechartTitle").attr("font-size", 20);
-      // console.log("here", typeof (side.style("width")), side.style("width"));
-      let linechartSvg = d3.select("#linechart");
-
-      let divWidth = Number(
-        d3.select("#sidebar").style("width").replace("px", "")
-      );
-      linechartSvg.attr("width", divWidth - 20);
-
-      console.log(linechartSvg.attr("width"));
-      const linechartMargin = { top: 30, right: 10, bottom: 50, left: 70 };
-      const linechartWidth =
-        linechartSvg.attr("width") -
-        linechartMargin.left -
-        linechartMargin.right;
-      const linechartHeight =
-        linechartSvg.attr("height") -
-        linechartMargin.top -
-        linechartMargin.bottom;
-      console.log(linechartMargin.left - linechartMargin.right);
-
-      let linechartAnnotations = linechartSvg
-        .append("g")
-        .attr("id", "annotations");
-      let linechartArea = linechartSvg
-        .append("g")
-        .attr("id", "points")
-        .attr(
-          "transform",
-          `translate(${linechartMargin.left},${linechartMargin.top})`
+        let divWidth = Number(
+          d3.select("#sidebar").style("width").replace("px", "")
         );
+        linechartSvg.attr("width", divWidth - 20);
 
-      // Line chart y axis (unemployment rate)
-      let unemploymentScale = d3
-        .scaleLinear()
-        .domain([0, 1])
-        .range([linechartHeight, 0]);
-      let linechartLeftAxis = d3
-        .axisLeft(unemploymentScale)
-        .tickFormat(d3.format(".1%"));
-      let linechartLeftGridlines = d3
-        .axisLeft(unemploymentScale)
-        .tickSize(-linechartWidth - 10)
-        .tickFormat("");
-      linechartAnnotations
-        .append("g")
-        .attr("class", "y axis")
-        .attr(
-          "transform",
-          `translate(${linechartMargin.left - 10},${linechartMargin.top})`
-        )
-        .call(linechartLeftAxis);
-      linechartAnnotations
-        .append("g")
-        .attr("class", "y gridlines")
-        .attr(
-          "transform",
-          `translate(${linechartMargin.left - 10},${linechartMargin.top})`
-        )
-        .call(linechartLeftGridlines);
+        console.log(linechartSvg.attr("width"));
+        const linechartMargin = { top: 30, right: 10, bottom: 50, left: 70 };
+        const linechartWidth =
+          linechartSvg.attr("width") -
+          linechartMargin.left -
+          linechartMargin.right;
+        const linechartHeight =
+          linechartSvg.attr("height") -
+          linechartMargin.top -
+          linechartMargin.bottom;
+        console.log(linechartMargin.left - linechartMargin.right);
 
-      // Line chart x axis (date)
-      let dateScale = d3
-        .scaleTime()
-        .domain([new Date("January 1990"), new Date("December 2016")])
-        .range([0, linechartWidth]);
-      let linechartBottomAxis = d3.axisBottom(dateScale);
-      let linechartBottomGridlines = d3
-        .axisBottom(dateScale)
-        .tickSize(-linechartHeight - 10)
-        .tickFormat("");
-      linechartAnnotations
-        .append("g")
-        .attr("class", "x axis")
-        .attr(
-          "transform",
-          `translate(${linechartMargin.left},${linechartHeight + linechartMargin.top + 10
-          })`
-        )
-        .call(linechartBottomAxis);
-      linechartAnnotations
-        .append("g")
-        .attr("class", "x gridlines")
-        .attr(
-          "transform",
-          `translate(${linechartMargin.left},${linechartHeight + linechartMargin.top + 10
-          })`
-        )
-        .call(linechartBottomGridlines);
+        let linechartAnnotations = linechartSvg
+          .append("g")
+          .attr("id", "annotations");
+        let linechartArea = linechartSvg
+          .append("g")
+          .attr("id", "points")
+          .attr(
+            "transform",
+            `translate(${linechartMargin.left},${linechartMargin.top})`
+          );
 
-      // Line chart axes labels
-      linechartAnnotations
-        .append("text")
-        .text("Date")
-        .attr("class", "chartlabel")
-        // .attr("text-anchor", "middle")
-        .attr("x", linechartWidth / 2 + linechartMargin.left)
-        .attr("y", linechartHeight + linechartMargin.top + 45);
-      linechartAnnotations
-        .append("text")
-        .text("Unemployment Rate")
-        .attr("class", "chartlabel")
-        // .attr("text-anchor", "middle")
-        .attr(
-          "transform",
-          `translate(${12},${linechartHeight / 2 + linechartMargin.bottom + 20
-          }) rotate(-90)`
-        );
-      linechartAnnotations
-        .append("text")
-        .text("Unemployment Rate from 1990 to 2016")
-        .attr("class", "chart-title")
-        // .attr("text-anchor", "start")
-        .attr("x", linechartMargin.left)
-        .attr("y", linechartMargin.top - 10);
-
-      // Line chart mouse effects setup
-      let linechartMouseGroup = linechartArea.append("g");
-      let xMarker = linechartMouseGroup
-        .append("line")
-        .attr("id", "xMarker")
-        .attr("fill", "none")
-        .attr("stroke", "black")
-        .attr("stroke-width", 1)
-        .attr("y1", 0)
-        .attr("y2", linechartHeight)
-        .attr("visibility", "hidden");
-
-      let valueMarker = linechartMouseGroup
-        .append("circle")
-        .attr("id", "valueMarker")
-        .attr("fill", "none")
-        .attr("stroke", "black")
-        .attr("stroke-width", 2)
-        .attr("r", 7)
-        .attr("visibility", "hidden");
-
-      let tooltipLineWidth = 40;
-      let tooltipLineHeight = 20;
-      let tooltipLine = linechartMouseGroup
-        .append("g")
-        .attr("visibility", "hidden");
-      tooltipLine
-        .append("rect")
-        .attr("fill", "lightgrey")
-        .attr("opacity", 0.7)
-        .attr("x", -tooltipLineWidth / 2.0)
-        .attr("y", 0)
-        .attr("width", tooltipLineWidth)
-        .attr("height", tooltipLineHeight);
-      let linechartLabelText = tooltipLine
-        .append("text")
-        .attr("text-anchor", "middle")
-        .attr("alignment-baseline", "middle")
-        .attr("y", tooltipLineHeight / 2.0)
-        .style("font-size", 13);
-
-      let activeRegion = linechartMouseGroup
-        .append("rect")
-        .attr("id", "activeRegion")
-        .attr("width", linechartWidth)
-        .attr("height", linechartHeight)
-        .attr("fill", "none")
-        .attr("pointer-events", "all");
-
-      activeRegion.on("mouseout", function () {
-        xMarker.attr("visibility", "hidden");
-        valueMarker.attr("visibility", "hidden");
-        tooltipLine.attr("visibility", "hidden");
-      });
-
-      // Update line chart for new county data
-      function updateLineChart(county) {
-        const countyData = unemploymentData[county];
-        const TRANSITION_DURATION = 1000;
-
-        // Change scale based on data extent
-        const unemploymentExtent = d3.extent(
-          countyData,
-          (d) => d.unemploymentRate
-        );
-        unemploymentScale.domain(unemploymentExtent);
+        // Line chart y axis (unemployment rate)
+        let unemploymentScale = d3
+          .scaleLinear()
+          .domain([0, 1])
+          .range([linechartHeight, 0]);
+        let linechartLeftAxis = d3
+          .axisLeft(unemploymentScale)
+          .tickFormat(d3.format(".1%"));
+        let linechartLeftGridlines = d3
+          .axisLeft(unemploymentScale)
+          .tickSize(-linechartWidth - 10)
+          .tickFormat("");
         linechartAnnotations
-          .selectAll(".y.axis")
-          .transition()
-          .duration(TRANSITION_DURATION)
+          .append("g")
+          .attr("class", "y axis")
+          .attr(
+            "transform",
+            `translate(${linechartMargin.left - 10},${linechartMargin.top})`
+          )
           .call(linechartLeftAxis);
         linechartAnnotations
-          .selectAll(".y.gridlines")
-          .transition()
-          .duration(TRANSITION_DURATION)
+          .append("g")
+          .attr("class", "y gridlines")
+          .attr(
+            "transform",
+            `translate(${linechartMargin.left - 10},${linechartMargin.top})`
+          )
           .call(linechartLeftGridlines);
 
-        // Transition line from old data to new data
-        let u = linechartArea.selectAll(".line").data([countyData]);
-
-        u.enter()
-          .append("path")
-          .attr("class", "line")
-          .merge(u)
-          .transition()
-          .duration(TRANSITION_DURATION)
+        // Line chart x axis (date)
+        let dateScale = d3
+          .scaleTime()
+          .domain([new Date("January 1990"), new Date("December 2016")])
+          .range([0, linechartWidth]);
+        let linechartBottomAxis = d3.axisBottom(dateScale);
+        let linechartBottomGridlines = d3
+          .axisBottom(dateScale)
+          .tickSize(-linechartHeight - 10)
+          .tickFormat("");
+        linechartAnnotations
+          .append("g")
+          .attr("class", "x axis")
           .attr(
-            "d",
-            d3
-              .line()
-              .x((d) => dateScale(d.date))
-              .y((d) => unemploymentScale(d.unemploymentRate))
-              // .y0(unemploymentScale(unemploymentExtent[0]))
-              // .y1((d) => unemploymentScale(d.unemploymentRate))
-              .curve(d3.curveMonotoneX)
-          )
-          .attr("fill", "none")
-          .attr("stroke", colorScale(10.9))
-          .attr("stroke-width", 1.5);
-
-        linechartMouseGroup.raise();
-        // Enable mouse effects upon first line drawn
-        activeRegion.on("mouseover", function () {
-          xMarker.attr("visibility", "");
-          valueMarker.attr("visibility", "");
-          tooltipLine.attr("visibility", "");
-        });
-
-        activeRegion.on("mousemove", function (evt) {
-          let findDate = d3.bisector((d) => d.date).right;
-          // Get mouse location
-          let location = d3.pointer(evt);
-          let x = location[0];
-          // Use "invert" on a scale to go from pixels back to data
-          let xDate = dateScale.invert(x);
-          // We use the bisector to find the index of the element that's closest to our xDate
-          let index = findDate(countyData, xDate);
-          // We can then get d, the data point that's closest
-          let d = countyData[index];
-
-          // From there, it's just a matter of updating positions using our scales like we've done for a while now
-          let xPos = dateScale(d.date);
-          let yPos = unemploymentScale(d.unemploymentRate);
-
-          xMarker.attr("x1", xPos).attr("x2", xPos);
-          valueMarker.attr("cx", xPos).attr("cy", yPos);
-
-          let txt = d3.format(".1%")(d.unemploymentRate);
-          let xOffset = 30;
-          let yOffset = -30;
-
-          linechartLabelText.text(txt);
-          if (xPos > linechartWidth / 2.0) {
-            xOffset = -30;
-          }
-          if (yPos < 50) {
-            yOffset = 10;
-          }
-          tooltipLine.attr(
             "transform",
-            `translate(${xPos + xOffset},${yPos + yOffset})`
+            `translate(${linechartMargin.left},${
+              linechartHeight + linechartMargin.top + 10
+            })`
+          )
+          .call(linechartBottomAxis);
+        linechartAnnotations
+          .append("g")
+          .attr("class", "x gridlines")
+          .attr(
+            "transform",
+            `translate(${linechartMargin.left},${
+              linechartHeight + linechartMargin.top + 10
+            })`
+          )
+          .call(linechartBottomGridlines);
+
+        // Line chart axes labels
+        linechartAnnotations
+          .append("text")
+          .text("Date")
+          .attr("class", "chartlabel")
+          // .attr("text-anchor", "middle")
+          .attr("x", linechartWidth / 2 + linechartMargin.left)
+          .attr("y", linechartHeight + linechartMargin.top + 45);
+        linechartAnnotations
+          .append("text")
+          .text("Unemployment Rate")
+          .attr("class", "chartlabel")
+          // .attr("text-anchor", "middle")
+          .attr(
+            "transform",
+            `translate(${12},${
+              linechartHeight / 2 + linechartMargin.bottom + 20
+            }) rotate(-90)`
           );
+        linechartAnnotations
+          .append("text")
+          .text("Unemployment Rate from 1990 to 2016")
+          .attr("class", "chart-title")
+          // .attr("text-anchor", "start")
+          .attr("x", linechartMargin.left)
+          .attr("y", linechartMargin.top - 10);
+
+        // Line chart mouse effects setup
+        let linechartMouseGroup = linechartArea.append("g");
+        let xMarker = linechartMouseGroup
+          .append("line")
+          .attr("id", "xMarker")
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", 1)
+          .attr("y1", 0)
+          .attr("y2", linechartHeight)
+          .attr("visibility", "hidden");
+
+        let valueMarker = linechartMouseGroup
+          .append("circle")
+          .attr("id", "valueMarker")
+          .attr("fill", "none")
+          .attr("stroke", "black")
+          .attr("stroke-width", 2)
+          .attr("r", 7)
+          .attr("visibility", "hidden");
+
+        let tooltipLineWidth = 40;
+        let tooltipLineHeight = 20;
+        let tooltipLine = linechartMouseGroup
+          .append("g")
+          .attr("visibility", "hidden");
+        tooltipLine
+          .append("rect")
+          .attr("fill", "lightgrey")
+          .attr("opacity", 0.7)
+          .attr("x", -tooltipLineWidth / 2.0)
+          .attr("y", 0)
+          .attr("width", tooltipLineWidth)
+          .attr("height", tooltipLineHeight);
+        let linechartLabelText = tooltipLine
+          .append("text")
+          .attr("text-anchor", "middle")
+          .attr("alignment-baseline", "middle")
+          .attr("y", tooltipLineHeight / 2.0)
+          .style("font-size", 13);
+
+        let activeRegion = linechartMouseGroup
+          .append("rect")
+          .attr("id", "activeRegion")
+          .attr("width", linechartWidth)
+          .attr("height", linechartHeight)
+          .attr("fill", "none")
+          .attr("pointer-events", "all");
+
+        activeRegion.on("mouseout", function () {
+          xMarker.attr("visibility", "hidden");
+          valueMarker.attr("visibility", "hidden");
+          tooltipLine.attr("visibility", "hidden");
         });
-      }
-    };
 
-    requestData();
-  </script>
-  <script>
-    // function Legend from "@d3/color-legend"
-    function Legend(
-      color,
-      {
-        title,
-        tickSize = 6,
-        width = 320,
-        height = 44 + tickSize,
-        marginTop = 18,
-        marginRight = 0,
-        marginBottom = 16 + tickSize,
-        marginLeft = 0,
-        ticks = width / 64,
-        tickFormat,
-        tickValues,
-      } = {}
-    ) {
-      function ramp(color, n = 256) {
-        const canvas = document.createElement("canvas");
-        canvas.width = n;
-        canvas.height = 1;
-        const context = canvas.getContext("2d");
-        for (let i = 0; i < n; ++i) {
-          context.fillStyle = color(i / (n - 1));
-          context.fillRect(i, 0, 1, 1);
-        }
-        return canvas;
-      }
+        // Update line chart for new county data
+        function updateLineChart(county) {
+          const countyData = unemploymentData[county];
+          const TRANSITION_DURATION = 1000;
 
-      const svgLegend = d3
-        .select("#legend")
-        .attr("width", width)
-        .attr("height", height)
-        .attr("viewBox", [0, 0, width, height])
-        .style("overflow", "visible")
-        .style("display", "block");
-
-      let tickAdjust = (g) =>
-        g
-          .selectAll(".tick line")
-          .attr("y1", marginTop + marginBottom - height);
-      let x;
-      x = Object.assign(
-        color
-          .copy()
-          .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
-        {
-          range() {
-            return [marginLeft, width - marginRight];
-          },
-        }
-      );
-
-      svgLegend
-        .append("image")
-        .attr("x", marginLeft)
-        .attr("y", marginTop)
-        .attr("width", width - marginLeft - marginRight)
-        .attr("height", height - marginTop - marginBottom)
-        .attr("preserveAspectRatio", "none")
-        .attr("xlink:href", ramp(color.interpolator()).toDataURL());
-
-      if (!x.ticks) {
-        if (tickValues === undefined) {
-          const n = Math.round(ticks + 1);
-          tickValues = d3
-            .range(n)
-            .map((i) => d3.quantile(color.domain(), i / (n - 1)));
-        }
-        if (typeof tickFormat !== "function") {
-          tickFormat = d3.format(
-            tickFormat === undefined ? ",f" : tickFormat
+          // Change scale based on data extent
+          const unemploymentExtent = d3.extent(
+            countyData,
+            (d) => d.unemploymentRate
           );
+          unemploymentScale.domain(unemploymentExtent);
+          linechartAnnotations
+            .selectAll(".y.axis")
+            .transition()
+            .duration(TRANSITION_DURATION)
+            .call(linechartLeftAxis);
+          linechartAnnotations
+            .selectAll(".y.gridlines")
+            .transition()
+            .duration(TRANSITION_DURATION)
+            .call(linechartLeftGridlines);
+
+          // Transition line from old data to new data
+          let u = linechartArea.selectAll(".line").data([countyData]);
+
+          u.enter()
+            .append("path")
+            .attr("class", "line")
+            .merge(u)
+            .transition()
+            .duration(TRANSITION_DURATION)
+            .attr(
+              "d",
+              d3
+                .line()
+                .x((d) => dateScale(d.date))
+                .y((d) => unemploymentScale(d.unemploymentRate))
+                // .y0(unemploymentScale(unemploymentExtent[0]))
+                // .y1((d) => unemploymentScale(d.unemploymentRate))
+                .curve(d3.curveMonotoneX)
+            )
+            .attr("fill", "none")
+            .attr("stroke", colorScale(10.9))
+            .attr("stroke-width", 1.5);
+
+          linechartMouseGroup.raise();
+          // Enable mouse effects upon first line drawn
+          activeRegion.on("mouseover", function () {
+            xMarker.attr("visibility", "");
+            valueMarker.attr("visibility", "");
+            tooltipLine.attr("visibility", "");
+          });
+
+          activeRegion.on("mousemove", function (evt) {
+            let findDate = d3.bisector((d) => d.date).right;
+            // Get mouse location
+            let location = d3.pointer(evt);
+            let x = location[0];
+            // Use "invert" on a scale to go from pixels back to data
+            let xDate = dateScale.invert(x);
+            // We use the bisector to find the index of the element that's closest to our xDate
+            let index = findDate(countyData, xDate);
+            // We can then get d, the data point that's closest
+            let d = countyData[index];
+
+            // From there, it's just a matter of updating positions using our scales like we've done for a while now
+            let xPos = dateScale(d.date);
+            let yPos = unemploymentScale(d.unemploymentRate);
+
+            xMarker.attr("x1", xPos).attr("x2", xPos);
+            valueMarker.attr("cx", xPos).attr("cy", yPos);
+
+            let txt = d3.format(".1%")(d.unemploymentRate);
+            let xOffset = 30;
+            let yOffset = -30;
+
+            linechartLabelText.text(txt);
+            if (xPos > linechartWidth / 2.0) {
+              xOffset = -30;
+            }
+            if (yPos < 50) {
+              yOffset = 10;
+            }
+            tooltipLine.attr(
+              "transform",
+              `translate(${xPos + xOffset},${yPos + yOffset})`
+            );
+          });
         }
-      }
-      svgLegend
-        .append("g")
-        .attr("transform", `translate(0,${height - marginBottom})`)
-        .call(
-          d3
-            .axisBottom(x)
-            .ticks(
-              ticks,
-              typeof tickFormat === "string" ? tickFormat : undefined
-            )
-            .tickFormat(
-              typeof tickFormat === "function" ? tickFormat : undefined
-            )
-            .tickSize(tickSize)
-            .tickValues(tickValues)
-        )
-        .call(tickAdjust)
-        .call((g) => g.select(".domain").remove())
-        .call((g) =>
+      };
+
+      requestData();
+    </script>
+    <script>
+      // function Legend from "@d3/color-legend"
+      function Legend(
+        color,
+        {
+          title,
+          tickSize = 6,
+          width = 320,
+          height = 44 + tickSize,
+          marginTop = 18,
+          marginRight = 0,
+          marginBottom = 16 + tickSize,
+          marginLeft = 0,
+          ticks = width / 64,
+          tickFormat,
+          tickValues,
+        } = {}
+      ) {
+        function ramp(color, n = 256) {
+          const canvas = document.createElement("canvas");
+          canvas.width = n;
+          canvas.height = 1;
+          const context = canvas.getContext("2d");
+          for (let i = 0; i < n; ++i) {
+            context.fillStyle = color(i / (n - 1));
+            context.fillRect(i, 0, 1, 1);
+          }
+          return canvas;
+        }
+
+        const svgLegend = d3
+          .select("#legend")
+          .attr("width", width)
+          .attr("height", height)
+          .attr("viewBox", [0, 0, width, height])
+          .style("overflow", "visible")
+          .style("display", "block");
+
+        let tickAdjust = (g) =>
           g
-            .append("text")
-            .attr("x", marginLeft)
-            .attr("y", marginTop + marginBottom - height - 6)
-            .attr("fill", "currentColor")
-            .attr("text-anchor", "start")
-            .attr("font-weight", "bold")
-            .text(title)
+            .selectAll(".tick line")
+            .attr("y1", marginTop + marginBottom - height);
+        let x;
+        x = Object.assign(
+          color
+            .copy()
+            .interpolator(d3.interpolateRound(marginLeft, width - marginRight)),
+          {
+            range() {
+              return [marginLeft, width - marginRight];
+            },
+          }
         );
 
-      return svgLegend.node();
-    }
-  </script>
-</body>
+        svgLegend
+          .append("image")
+          .attr("x", marginLeft)
+          .attr("y", marginTop)
+          .attr("width", width - marginLeft - marginRight)
+          .attr("height", height - marginTop - marginBottom)
+          .attr("preserveAspectRatio", "none")
+          .attr("xlink:href", ramp(color.interpolator()).toDataURL());
 
+        if (!x.ticks) {
+          if (tickValues === undefined) {
+            const n = Math.round(ticks + 1);
+            tickValues = d3
+              .range(n)
+              .map((i) => d3.quantile(color.domain(), i / (n - 1)));
+          }
+          if (typeof tickFormat !== "function") {
+            tickFormat = d3.format(
+              tickFormat === undefined ? ",f" : tickFormat
+            );
+          }
+        }
+        svgLegend
+          .append("g")
+          .attr("transform", `translate(0,${height - marginBottom})`)
+          .call(
+            d3
+              .axisBottom(x)
+              .ticks(
+                ticks,
+                typeof tickFormat === "string" ? tickFormat : undefined
+              )
+              .tickFormat(
+                typeof tickFormat === "function" ? tickFormat : undefined
+              )
+              .tickSize(tickSize)
+              .tickValues(tickValues)
+          )
+          .call(tickAdjust)
+          .call((g) => g.select(".domain").remove())
+          .call((g) =>
+            g
+              .append("text")
+              .attr("x", marginLeft)
+              .attr("y", marginTop + marginBottom - height - 6)
+              .attr("fill", "currentColor")
+              .attr("text-anchor", "start")
+              .attr("font-weight", "bold")
+              .text(title)
+          );
+
+        return svgLegend.node();
+      }
+    </script>
+  </body>
 </html>
