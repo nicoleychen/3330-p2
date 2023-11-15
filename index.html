@@ -617,28 +617,28 @@
           .append("g")
           .attr("transform", `translate(${pieWidth / 2}, ${pieHeight / 2})`);
 
-        pie
-          .append("text")
-          .attr("text-anchor", "middle")
-          .attr("font-size", 20)
-          .attr("x", 0)
-          .attr("y", 300);
-        let pieDomain = [
-          "P_some_high_school",
-          "P_high_school_equivalent",
-          "P_other",
-          "P_below_middle_school",
-          "P_some_college",
-          "P_bachelor_and_above",
-        ];
-        let pieDomainDict = {
-          "P_below_middle_school": "below middle school",
-          "P_some_high_school": "some high school",
-          "P_high_school_equivalent": "high school equivalent",
-          "P_some_college": "some college",
-          "P_bachelor_and_above": "bachelor and above",
-          "P_other": "other"
-        }
+      pie
+        .append("text")
+        .attr("text-anchor", "middle")
+        .attr("font-size", 20)
+        .attr("x", 0)
+        .attr("y", 300);
+      let pieDomain = [
+        "P_some_high_school",
+        "P_high_school_equivalent",
+        "P_other",
+        "P_below_middle_school",
+        "P_some_college",
+        "P_bachelor_and_above",
+      ];
+      let pieDomainDict = {
+        "P_below_middle_school": "below middle school",
+        "P_some_high_school": "some high school",
+        "P_high_school_equivalent": "high school equivalent",
+        "P_some_college": "some college",
+        "P_bachelor_and_above": "bachelor and above",
+        "P_other": "unknown"
+      }
 
         let tristate_school = {};
         countyNames.forEach((county) => {
