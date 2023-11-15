@@ -10,19 +10,19 @@
       font-weight: 500;
     }
 
-      #textbox {
-        /* background-color: gray; */
-        /* width: 100%; */
-        height: 120px;
-        padding: 12px 20px;
-        box-sizing: border-box;
-        border: 2px solid #ccc;
-        border-radius: 6px;
-        background-color: #f8f8f8;
-        font-size: 16px;
-        resize: none;
-        /* visibility:hidden; */
-      }
+    #textbox {
+      /* background-color: gray; */
+      /* width: 100%; */
+      height: 120px;
+      padding: 9px 15px;
+      box-sizing: border-box;
+      border: 2px solid #ccc;
+      border-radius: 6px;
+      background-color: #f8f8f8;
+      font-size: 16px;
+      resize: none;
+      /* visibility:hidden; */
+    }
 
     .container {
       width: 100%;
@@ -59,14 +59,12 @@
       display: flex;
       flex-direction: row;
     }
-    #text-legend{
-      display:flex;
-      flex-direction:column;
+
+    #text-legend {
+      display: flex;
+      flex-direction: column;
     }
 
-    /* .county {
-        stroke: white;
-      } */
     .outline {
       fill: none;
       stroke: white;
@@ -81,13 +79,27 @@
     .gridlines .domain {
       stroke: none;
     }
+
+    .chart-title {
+      font-size: 15px;
+    }
+
+    .chartlabel {
+      font-size: 10;
+    }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <div id="title">title</div>
-    <p id="description">paragraph</p>
+    <div id="title"></div>
+    <h2>A Look at Internet Access across the Tristate Region</h2>
+    <p id="description">
+      This visualization was designed to take a closer look at the internet access across the Tristate region, and how
+      the demographics and economic profiles of households might impact and explain some correlation. Users may select a
+      county to see the breakdown of economic profiles, demographics, as well as examine the unemployment changes
+      throughout time.
+    </p>
     <div id="visualizations">
       <div id="map-container">
         <svg id="map" height="750" width="700"></svg>
@@ -99,11 +111,9 @@
             <svg id="textbox" height="200" width="230"></svg>
             <svg id="pielegend"></svg>
           </div>
-          
-          <svg id="pie" height="300" width="300"></svg>></svg>
-          
+          <svg id="pie" height="300" width="300"></svg></svg>
         </div>
-        <svg id="linechart" height="250" width="500"></svg>
+        <svg id="linechart" height="300" width="500"> </svg>
         <svg id="bar" height="400" width="400"></svg>
       </div>
     </div>
@@ -341,7 +351,7 @@
         .attr("x", 0)
         .style("font-size", 13)
         .attr("y", 22);
-      
+
       // console.log(tristate.objects.counties);
       function mouseEntersState() {
         tooltip.style("visibility", "visible"); // Make tooltip visible
@@ -385,44 +395,71 @@
         tickFormat: (d) => d + "%",
       });
 
-        // Info Box ===========================================================
-        let textWidth = 230;
-        let textHeight = 140;
-        let infobox = d3
-          .select("#textbox");
-          // .attr("width", textWidth )
-          // .attr("height", textHeight);
-          // .append("g");
-        box = infobox.append("g");
-        
-        function updateTextBox(name){
-          // infobox.attr("visibility", "visible");
+      // Info Box ===========================================================
+      let textWidth = 230;
+      let textHeight = 180;
+      let infobox = d3
+        .select("#textbox");
+      // .attr("width", textWidth )
+      // .attr("height", textHeight);
+      // .append("g");
+      box = infobox.append("g");
+      let boxCountyName = box.append("text")
+        .attr("text-anchor", "start")
+        .text("Select a County")
+        .attr("x", 0)
+        .attr("y", 15)
+        .style("font-size", 16)
+        .style("font-weight", 600);
+      let boxTotalPop = box.append("text")
+        .text("Total Population:")
+        .attr("x", 0)
+        .attr("y", 33)
+        .style("font-size", 11);
+      let boxInternet = box.append("text")
+        .text("Percent with No Internet: ")
+        .attr("x", 0)
+        .attr("y", 48)
+        .style("font-size", 11);
+      let boxMedianIncome = box.append("text")
+        .text("Median Household Income:")
+        .attr("x", 0)
+        .attr("y", 63)
+        .style("font-size", 11);
+      let boxMedianAge = box.append("text")
+        .text("Median Age:")
+        .attr("x", 0)
+        .attr("y", 78)
+        .style("font-size", 11);
+      let boxPoverty = box.append("text")
+        .text("Percentage Below Poverty Line:")
+        .attr("x", 0)
+        .attr("y", 93)
+        .style("font-size", 11);
 
-          data = countyDict[name + " County"];
-          console.log(data)
-          box.selectAll("text")
-            .remove();
-          box.append("text")
-          // .attr("text-anchor", "middle")
-          .attr("x", 10)
-          .attr("y", 30)
-          .style("font-size", 16)
-          .style("font-weight", 600)
-          .text(data.county+", "+data.state);
-          box.append("text")
-            .attr("x", 0)
-            .attr("y", 70)
-            .style("font-size", 11)
-            .text("Median Household Income: $"+data.median_household_income);
-          box.append("text")
-            .attr("x", 0)
-            .attr("y", 85)
-            .style("font-size", 11)
-            .text("Median Age: " + data.median_age);
-        }
+      function updateTextBox(name) {
+        // infobox.attr("visibility", "visible");
+        data = countyDict[name + " County"];
+        console.log(data)
+        // box.selectAll("text")
+        //   .remove();
+        boxTotalPop
+          .text("Total Population: " + d3.format(",r")(data.P_total));
+        boxInternet
+          .text("Percent with No Internet: " + d3.format(".2%")(Number(data.percent_no_internet) / 100));
+        boxCountyName
+          .text(data.county + ", " + data.state);
+        boxMedianIncome
+          .text("Median Household Income: " + d3.format("($,.0f")(data.median_household_income));
+        boxMedianAge
+          .text("Median Age: " + data.median_age);
+        let poverty = d3.format(".2%")(Number(data.P_below_poverty) / Number(data.P_total));
+        boxPoverty
+          .text("Percentage Below Poverty: " + poverty)
+      }
 
 
-        // Bar Chart ===========================================================
+      // Bar Chart ===========================================================
 
       barRace
         .append("text")
@@ -741,10 +778,15 @@
       pielegend.selectAll("mydots")
         .data(Object.keys(pieDomainDict))
         .enter()
-        .append("circle")
-        .attr("cx", 60)
-        .attr("cy", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
-        .attr("r", 5)
+        // .append("circle")
+        .append("rect")
+        // .attr("cx", 60)
+        // .attr("cy", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
+        // .attr("r", 2)
+        .attr("x", 10)
+        .attr("y", function (d, i) { return 35 + i * 20 })
+        .attr('width', "10px")
+        .attr('height', 10)
         .style("fill", function (d) { return pieColorScale(d) })
 
       // Add one dot in the legend for each name.
@@ -752,7 +794,7 @@
         .data(Object.keys(pieDomainDict))
         .enter()
         .append("text")
-        .attr("x", 75)
+        .attr("x", 25)
         .attr("y", function (d, i) { return 40 + i * 20 }) // 100 is where the first dot appears. 25 is the distance between dots
         .style("fill", function (d) { return pieColorScale(d) })
         .text(function (d) { return pieDomainDict[d] })
@@ -762,9 +804,16 @@
 
       // Unemployment Line Chart =============================================
       const unemploymentData = await unemploymentPreprocess();
+      let linechartTitle = d3.select("#linechartTitle")
+        .attr("font-size", 20)
+      // console.log("here", typeof (side.style("width")), side.style("width"));
+      let divWidth = Number(d3.select("#sidebar").style("width").replace("px", ""));
+      let linechartSvg = d3.select("#linechart");
+      linechartSvg
+        .attr("width", divWidth - 20);
 
-      const linechartSvg = d3.select("#linechart");
-      const linechartMargin = { top: 10, right: 10, bottom: 50, left: 70 };
+      console.log(linechartSvg.attr("width"));
+      const linechartMargin = { top: 30, right: 10, bottom: 50, left: 70 };
       const linechartWidth =
         linechartSvg.attr("width") -
         linechartMargin.left -
@@ -773,6 +822,9 @@
         linechartSvg.attr("height") -
         linechartMargin.top -
         linechartMargin.bottom;
+      console.log(
+        linechartMargin.left -
+        linechartMargin.right);
 
       let linechartAnnotations = linechartSvg
         .append("g")
@@ -853,11 +905,18 @@
       linechartAnnotations
         .append("text")
         .text("Unemployment Rate")
+        .attr("class", "chartlabel")
         .attr("text-anchor", "middle")
         .attr(
           "transform",
-          `translate(${15},${linechartHeight / 2}) rotate(-90)`
+          `translate(${12},${linechartHeight / 2}) rotate(-90)`
         );
+      linechartAnnotations.append("text")
+        .text("Unemployment Rate from 1990 to 2016")
+        .attr("class", "chart-title")
+        .attr("text-anchor", "start")
+        .attr("x", linechartMargin.left)
+        .attr("y", linechartMargin.top - 10);
 
       // Line chart mouse effects setup
       let linechartMouseGroup = linechartArea.append("g");
