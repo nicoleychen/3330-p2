@@ -464,7 +464,7 @@
         function updateTextBox(name) {
           // infobox.attr("visibility", "visible");
           data = countyDict[name + " County"];
-          console.log(data);
+          // console.log(data);
           // box.selectAll("text")
           //   .remove();
           boxTotalPop.text(
@@ -742,7 +742,7 @@
             .arc()
             .innerRadius(0)
             .outerRadius(Math.min(pieHeight, pieWidth) / 2 + 25);
-          console.log(pieColorScale("P_some_college"));
+          // console.log(pieColorScale("P_some_college"));
 
           const u = pie.selectAll("path").data(dataReady);
           u.join("path")
@@ -750,7 +750,7 @@
             .duration(750)
             .attr("d", arcGenerator)
             .attr("fill", function (d) {
-              console.log(d);
+              // console.log(d);
               return pieColorScale(d.data[0]);
             })
             .attr("stroke", "white")
@@ -835,7 +835,7 @@
         // pie legend
 
         let pielegend = d3.select("#pielegend");
-        console.log(pieColorScale("P_some_college"));
+        // console.log(pieColorScale("P_some_college"));
         // Add one dot in the legend for each name.
         pielegend
           .selectAll("mydots")
@@ -887,7 +887,7 @@
         );
         linechartSvg.attr("width", divWidth - 20);
 
-        console.log(linechartSvg.attr("width"));
+        // console.log(linechartSvg.attr("width"));
         const linechartMargin = { top: 30, right: 10, bottom: 50, left: 70 };
         const linechartWidth =
           linechartSvg.attr("width") -
@@ -897,7 +897,7 @@
           linechartSvg.attr("height") -
           linechartMargin.top -
           linechartMargin.bottom;
-        console.log(linechartMargin.left - linechartMargin.right);
+        // console.log(linechartMargin.left - linechartMargin.right);
 
         let linechartAnnotations = linechartSvg
           .append("g")
