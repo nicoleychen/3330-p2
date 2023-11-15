@@ -33,11 +33,14 @@
 
     #title {
       width: 100%;
-      text-align: center;
+      /* text-align: center; */
+      font-size: x-large;
+      padding: 5;
     }
 
     #description {
       width: 100%;
+      margin: 5;
     }
 
     #visualizations {
@@ -94,13 +97,18 @@
 
 <body>
   <div class="container">
-    <div id="title"></div>
-    <h2>A Look at Internet Access across the Tristate Region</h2>
+    <div id="title">
+      <strong>A Deeper Look at Internet Access across the Tristate Region</strong>
+    </div>
     <p id="description">
-      This visualization was designed to take a closer look at the internet access across the Tristate region, and how
-      the demographics and economic profiles of households might impact and explain some correlation. Users may select a
-      county to see the breakdown of economic profiles, demographics, as well as examine the unemployment changes
-      throughout time.
+      This visualization was designed to examine the internet access across the Tristate region, and invites users to
+      discover possible correlations behind the statistics. Some initial observations the user might make are how
+      counties with higher percentages of no internet access also have lower median household incomes. For a deeper
+      look, users may select a specific county to view a breakdown of the demographics, economic profiles of households,
+      and education level. In addition, users can further examine the unemployment changes throughout time.
+    </p>
+    <p>
+      <strong>CLICK ON A COUNTY TO START</strong>
     </p>
     <div id="visualizations">
       <div id="map-container">
